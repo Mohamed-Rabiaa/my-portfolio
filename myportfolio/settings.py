@@ -180,7 +180,9 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # React development server
     "http://127.0.0.1:3000",
-    "http://localhost:5174",  # Vite development server
+    "http://localhost:5173",  # Vite development server (actual port)
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",  # Vite development server (backup port)
     "http://127.0.0.1:5174",
 ]
 
