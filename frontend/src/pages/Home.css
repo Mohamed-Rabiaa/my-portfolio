@@ -10,7 +10,7 @@
 
 /* Hero Section */
 .hero {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-creative) 100%);
   color: white;
   padding: 100px 0;
   text-align: center;
@@ -56,12 +56,12 @@
 }
 
 .btn-primary {
-  background-color: #007bff;
+  background-color: var(--primary-dark);
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #0056b3;
+  background-color: #005577;
   transform: translateY(-2px);
 }
 
@@ -73,17 +73,17 @@
 
 .btn-secondary:hover {
   background-color: white;
-  color: #667eea;
+  color: #caf0f8;
 }
 
 .btn-outline {
   background-color: transparent;
-  color: #007bff;
-  border-color: #007bff;
+  color: var(--secondary-creative);
+  border: 2px solid var(--secondary-creative);
 }
 
 .btn-outline:hover {
-  background-color: #007bff;
+  background-color: var(--secondary-creative);
   color: white;
 }
 
@@ -154,7 +154,7 @@ section h2 {
 
 .skill-bar {
   height: 100%;
-  background: linear-gradient(90deg, #007bff, #0056b3);
+  background: linear-gradient(90deg, var(--primary-color), var(--tech-accent));
   border-radius: 4px;
   transition: width 0.3s ease;
 }
@@ -208,12 +208,12 @@ section h2 {
 }
 
 .tech-tag {
-  background-color: #e3f2fd;
-  color: #1976d2;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
+  background-color: var(--tech-accent);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
   font-size: 0.8rem;
-  font-weight: 500;
+  margin: 2px;
 }
 
 .project-links {

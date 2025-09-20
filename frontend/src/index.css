@@ -12,15 +12,18 @@
   font-weight: 400;
   
   /* Color Variables */
-  --primary-color: #007bff;
-  --primary-dark: #0056b3;
+  --primary-color: #caf0f8;
+  --primary-dark: #0077b6;
   --secondary-color: #6c757d;
-  --success-color: #28a745;
+  --secondary-creative: #6366f1;
+  --success-color: #10b981;
+  --tech-accent: #10b981;
   --danger-color: #dc3545;
   --warning-color: #ffc107;
-  --info-color: #17a2b8;
+  --info-color: #caf0f8;
   --light-color: #f8f9fa;
   --dark-color: #343a40;
+  --neutral-sophisticated: #64748b;
   
   /* Text Colors */
   --text-primary: #333;

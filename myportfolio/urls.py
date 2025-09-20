@@ -18,9 +18,26 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+def api_root(request):
+    """Root API endpoint with available endpoints information"""
+    return JsonResponse({
+        'message': 'Welcome to Mohamed Rabiaa Portfolio API',
+        'version': '1.0',
+        'endpoints': {
+            'portfolio': '/api/portfolio/',
+            'blog': '/api/blog/',
+            'contact': '/api/contact/',
+            'admin': '/admin/',
+            'api_docs': '/api/docs/',
+            'api_schema': '/api/schema/'
+        }
+    })
+
 urlpatterns = [
+    path('', api_root, name='api-root'),
     path("admin/", admin.site.urls),
     
     # API endpoints

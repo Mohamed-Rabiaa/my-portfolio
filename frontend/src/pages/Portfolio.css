@@ -35,9 +35,9 @@
 
 /* Portfolio Hero Section */
 .portfolio-hero {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-creative) 100%);
   color: white;
-  padding: 80px 0;
+  padding: 100px 0;
   text-align: center;
 }
 
@@ -144,7 +144,7 @@
 .project-placeholder {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-creative) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -249,19 +249,18 @@
 }
 
 .tech-tag {
-  background-color: #f8f9fa;
-  color: #495057;
-  padding: 0.25rem 0.75rem;
+  background-color: var(--tech-accent);
+  color: white;
+  padding: 4px 8px;
   border-radius: 12px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  border: 1px solid #e9ecef;
+  font-size: 0.8rem;
+  margin: 2px;
 }
 
 /* Call to Action Section */
 .portfolio-cta {
   padding: 80px 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-creative) 100%);
   color: white;
   text-align: center;
 }
@@ -285,7 +284,7 @@
   display: inline-block;
   padding: 1rem 2rem;
   background-color: white;
-  color: #007bff;
+  color: var(--primary-dark);
   text-decoration: none;
   border-radius: 25px;
   font-weight: 600;

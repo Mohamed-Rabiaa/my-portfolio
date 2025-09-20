@@ -10,9 +10,9 @@
 
 /* Contact Hero Section */
 .contact-hero {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-creative) 100%);
   color: white;
-  padding: 80px 0;
+  padding: 100px 0;
   text-align: center;
 }
 
@@ -79,7 +79,7 @@
 .method-icon {
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-creative) 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -117,7 +117,7 @@
 .social-link {
   width: 50px;
   height: 50px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-creative) 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -156,9 +156,9 @@
 }
 
 .alert-success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background-color: var(--tech-accent);
+  color: white;
+  border: 1px solid var(--tech-accent);
 }
 
 .alert-error {
@@ -203,7 +203,7 @@
 .submit-btn {
   width: 100%;
   padding: 1rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-dark);
   color: white;
   border: none;
   border-radius: 25px;
@@ -214,6 +214,7 @@
 }
 
 .submit-btn:hover:not(:disabled) {
+  background: #005577;
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
