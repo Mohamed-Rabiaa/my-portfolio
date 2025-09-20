@@ -4,7 +4,19 @@ from django.contrib.auth.models import User
 
 
 class Category(models.Model):
-    """Blog post categories"""
+    """
+    A model representing blog post categories.
+    
+    This class defines categories that can be assigned to blog posts for organization
+    and filtering purposes. Each category has a unique name and slug (URL-friendly version
+    of the name), an optional description, and tracks when it was created.
+
+    Attributes:
+        name (CharField): The category name (max 100 chars, must be unique)
+        slug (SlugField): URL-friendly version of the name (auto-generated if not provided)
+        description (TextField): Optional detailed description of the category
+        created_at (DateTimeField): Timestamp of when the category was created
+    """
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(unique=True, blank=True)
     description = models.TextField(blank=True)
@@ -22,9 +34,19 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-
 class Tag(models.Model):
-    """Blog post tags"""
+    """
+    A model representing blog post tags for content labeling and filtering.
+    
+    Tags provide a flexible way to label blog posts with keywords or topics,
+    allowing for better content organization and discovery. Unlike categories,
+    posts can have multiple tags.
+
+    Attributes:
+        name (CharField): The tag name (max 50 chars, must be unique)
+        slug (SlugField): URL-friendly version of the name (auto-generated if not provided)
+        created_at (DateTimeField): Timestamp of when the tag was created
+    """
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -33,6 +55,13 @@ class Tag(models.Model):
         ordering = ['name']
 
     def save(self, *args, **kwargs):
+        """
+        Override save method to auto-generate slug from name if not provided.
+        
+        Args:
+            *args: Variable length argument list
+            **kwargs: Arbitrary keyword arguments
+        """
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
@@ -42,7 +71,30 @@ class Tag(models.Model):
 
 
 class BlogPost(models.Model):
-    """Blog post model"""
+    """
+    A comprehensive model representing individual blog posts.
+    
+    This model handles all aspects of blog posts including content, metadata,
+    publishing status, categorization, and engagement tracking. It supports
+    draft/published workflows, SEO-friendly URLs, and content organization.
+
+    Attributes:
+        title (CharField): The post title (max 200 chars)
+        slug (SlugField): URL-friendly version of title (auto-generated if not provided)
+        excerpt (TextField): Brief description/summary (max 300 chars)
+        content (TextField): Full post content (supports rich text/markdown)
+        author (ForeignKey): Reference to User who authored the post
+        category (ForeignKey): Optional category assignment (can be null)
+        tags (ManyToManyField): Multiple tags for flexible content labeling
+        featured_image (ImageField): Optional header/featured image
+        status (CharField): Publishing status (draft/published/archived)
+        featured (BooleanField): Whether post should be highlighted/featured
+        read_time (PositiveIntegerField): Estimated reading time in minutes
+        views (PositiveIntegerField): View count for analytics
+        created_at (DateTimeField): When the post was first created
+        updated_at (DateTimeField): When the post was last modified
+        published_at (DateTimeField): When the post was published (null for drafts)
+    """
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('published', 'Published'),
@@ -69,6 +121,16 @@ class BlogPost(models.Model):
         ordering = ['-published_at', '-created_at']
 
     def save(self, *args, **kwargs):
+        """
+        Override save method to handle slug generation and publishing timestamps.
+        
+        Automatically generates a URL-friendly slug from the title if not provided,
+        and sets the published_at timestamp when status changes to 'published'.
+        
+        Args:
+            *args: Variable length argument list
+            **kwargs: Arbitrary keyword arguments
+        """
         if not self.slug:
             self.slug = slugify(self.title)
         if self.status == 'published' and not self.published_at:
@@ -81,11 +143,31 @@ class BlogPost(models.Model):
 
     @property
     def is_published(self):
+        """
+        Check if the blog post is currently published.
+        
+        Returns:
+            bool: True if status is 'published', False otherwise
+        """
         return self.status == 'published'
 
 
 class Comment(models.Model):
-    """Blog post comments"""
+    """
+    A model representing user comments on blog posts.
+    
+    This model handles user-generated comments with moderation capabilities.
+    Comments require approval before being displayed publicly, helping maintain
+    content quality and prevent spam.
+
+    Attributes:
+        post (ForeignKey): Reference to the BlogPost being commented on
+        name (CharField): Commenter's display name (max 100 chars)
+        email (EmailField): Commenter's email address (for notifications/contact)
+        content (TextField): The actual comment text
+        approved (BooleanField): Whether comment has been approved by moderators
+        created_at (DateTimeField): When the comment was submitted
+    """
     post = models.ForeignKey(BlogPost, on_delete=models.CASCADE, related_name='comments')
     name = models.CharField(max_length=100)
     email = models.EmailField()

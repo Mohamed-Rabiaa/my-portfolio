@@ -1,10 +1,33 @@
+"""
+Blog application serializers for REST API data transformation.
+
+This module provides serializers for converting Django model instances to/from
+JSON format for the blog API endpoints. Includes serializers for:
+- Blog posts (detailed and list views)
+- Categories and tags
+- Comments and user information
+- Custom field calculations and data formatting
+"""
+
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import BlogPost, Category, Tag, Comment
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Serializer for User model"""
+    """
+    Serializer for Django User model with basic profile information.
+    
+    Provides essential user information for blog post authorship display
+    without exposing sensitive data like email addresses or permissions.
+    Used in nested serialization within blog post data.
+    
+    Fields:
+        - id: Unique user identifier
+        - username: User's login name
+        - first_name: User's first name
+        - last_name: User's last name
+    """
     
     class Meta:
         model = User
@@ -12,7 +35,21 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
-    """Serializer for Category model"""
+    """
+    Serializer for blog Category model with post count statistics.
+    
+    Transforms category data for API consumption, including a calculated
+    field showing the number of published posts in each category. This
+    helps with navigation and content organization displays.
+    
+    Fields:
+        - id: Unique category identifier
+        - name: Category display name
+        - slug: URL-friendly category identifier
+        - description: Category description text
+        - posts_count: Number of published posts (calculated)
+        - created_at: Category creation timestamp
+    """
     posts_count = serializers.SerializerMethodField()
     
     class Meta:
@@ -20,11 +57,33 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'slug', 'description', 'posts_count', 'created_at']
     
     def get_posts_count(self, obj):
+        """
+        Calculate the number of published posts in this category.
+        
+        Args:
+            obj: Category model instance
+            
+        Returns:
+            int: Count of published posts in this category
+        """
         return obj.posts.filter(status='published').count()
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """Serializer for Tag model"""
+    """
+    Serializer for blog Tag model with usage statistics.
+    
+    Transforms tag data for API consumption, including a calculated field
+    showing how many published posts use each tag. This information is
+    useful for tag clouds and content discovery features.
+    
+    Fields:
+        - id: Unique tag identifier
+        - name: Tag display name
+        - slug: URL-friendly tag identifier
+        - posts_count: Number of published posts using this tag (calculated)
+        - created_at: Tag creation timestamp
+    """
     posts_count = serializers.SerializerMethodField()
     
     class Meta:
@@ -32,11 +91,34 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'slug', 'posts_count', 'created_at']
     
     def get_posts_count(self, obj):
+        """
+        Calculate the number of published posts using this tag.
+        
+        Args:
+            obj: Tag model instance
+            
+        Returns:
+            int: Count of published posts tagged with this tag
+        """
         return obj.posts.filter(status='published').count()
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    """Serializer for Comment model"""
+    """
+    Serializer for blog Comment model with privacy protection.
+    
+    Handles comment data transformation for both reading and writing operations.
+    Email addresses are write-only to protect commenter privacy while still
+    allowing notification functionality. Comments require moderation approval
+    before public display.
+    
+    Fields:
+        - id: Unique comment identifier
+        - name: Commenter's display name
+        - email: Commenter's email (write-only for privacy)
+        - content: Comment text content
+        - created_at: Comment submission timestamp
+    """
     
     class Meta:
         model = Comment
@@ -47,7 +129,24 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class BlogPostSerializer(serializers.ModelSerializer):
-    """Detailed serializer for BlogPost model"""
+    """
+    Comprehensive serializer for detailed BlogPost model representation.
+    
+    Provides complete blog post data including all related information such as
+    author details, category, tags, and comments. Used for single post views
+    where full content and metadata are needed. Includes calculated fields
+    for enhanced functionality.
+    
+    Features:
+        - Nested author information (read-only)
+        - Full category and tag details (read-only)
+        - Associated approved comments (read-only)
+        - Comment count calculation
+        - Human-readable status display
+        - Complete post metadata and content
+    
+    Fields include all BlogPost model fields plus calculated and nested data.
+    """
     author = UserSerializer(read_only=True)
     category = CategorySerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
@@ -65,11 +164,37 @@ class BlogPostSerializer(serializers.ModelSerializer):
         ]
     
     def get_comments_count(self, obj):
+        """
+        Calculate the number of approved comments for this post.
+        
+        Args:
+            obj: BlogPost model instance
+            
+        Returns:
+            int: Count of approved comments on this post
+        """
         return obj.comments.filter(approved=True).count()
 
 
 class BlogPostListSerializer(serializers.ModelSerializer):
-    """Simplified serializer for blog post list view"""
+    """
+    Optimized serializer for BlogPost model in list views.
+    
+    Provides essential blog post information for list displays with minimal
+    data transfer. Uses string representations for related objects instead
+    of full nested serialization to improve performance. Ideal for blog
+    post listings, search results, and archive pages.
+    
+    Features:
+        - Lightweight data representation
+        - String-based related object display
+        - Essential metadata only
+        - Optimized for list performance
+        - Comment count calculation
+    
+    Fields include core BlogPost information without full content or
+    detailed nested relationships.
+    """
     author = serializers.StringRelatedField(read_only=True)
     category = serializers.StringRelatedField(read_only=True)
     tags = serializers.StringRelatedField(many=True, read_only=True)
@@ -84,4 +209,13 @@ class BlogPostListSerializer(serializers.ModelSerializer):
         ]
     
     def get_comments_count(self, obj):
+        """
+        Calculate the number of approved comments for this post.
+        
+        Args:
+            obj: BlogPost model instance
+            
+        Returns:
+            int: Count of approved comments on this post
+        """
         return obj.comments.filter(approved=True).count()
