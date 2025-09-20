@@ -71,7 +71,7 @@ const BlogPost = () => {
       <header className="post-header">
         <div className="container">
           <div className="post-meta">
-            <span className="post-category">{post.category}</span>
+            <span className="post-category">{post.category?.name || post.category}</span>
             <span className="post-date">{formatDate(post.created_at)}</span>
           </div>
           <h1 className="post-title">{post.title}</h1>
@@ -104,9 +104,9 @@ const BlogPost = () => {
               <div className="post-tags">
                 <h3>Tags:</h3>
                 <div className="tags-list">
-                  {post.tags.split(',').map((tag, index) => (
+                  {post.tags && post.tags.map((tag, index) => (
                     <span key={index} className="tag">
-                      {tag.trim()}
+                      {tag.name || tag}
                     </span>
                   ))}
                 </div>

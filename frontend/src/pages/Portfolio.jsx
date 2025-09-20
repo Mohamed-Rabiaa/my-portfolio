@@ -24,7 +24,7 @@ const Portfolio = () => {
     fetchProjects();
   }, []);
 
-  const categories = ['all', ...new Set(projects.map(project => project.category))];
+  const categories = ['all', ...new Set(projects.map(project => project.category).filter(Boolean))];
 
   const filterProjects = (category) => {
     setSelectedCategory(category);
@@ -78,7 +78,7 @@ const Portfolio = () => {
                 className={`filter-btn ${selectedCategory === category ? 'active' : ''}`}
                 onClick={() => filterProjects(category)}
               >
-                {category === 'all' ? 'All Projects' : category.charAt(0).toUpperCase() + category.slice(1)}
+                {category === 'all' ? 'All Projects' : (category && category.charAt(0).toUpperCase() + category.slice(1))}
               </button>
             ))}
           </div>
@@ -131,13 +131,13 @@ const Portfolio = () => {
                   </div>
                   <div className="project-content">
                     <div className="project-meta">
-                      <span className="project-category">{project.category}</span>
+                      <span className="project-category">{project.category?.name || project.category || 'Uncategorized'}</span>
                       <span className="project-date">{formatDate(project.created_at)}</span>
                     </div>
                     <h3 className="project-title">{project.title}</h3>
                     <p className="project-description">{project.description}</p>
                     <div className="project-technologies">
-                      {project.technologies && project.technologies.split(',').map((tech, index) => (
+                      {project.technologies && project.technologies.map((tech, index) => (
                         <span key={index} className="tech-tag">
                           {tech.trim()}
                         </span>

@@ -91,7 +91,7 @@ const Home = () => {
                   <h3>{project.title}</h3>
                   <p>{project.description}</p>
                   <div className="project-tech">
-                    {project.technologies.split(',').map((tech, index) => (
+                    {project.technologies && project.technologies.map((tech, index) => (
                       <span key={index} className="tech-tag">
                         {tech.trim()}
                       </span>

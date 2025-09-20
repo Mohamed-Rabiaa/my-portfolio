@@ -34,7 +34,7 @@ const Blog = () => {
   };
 
   const truncateContent = (content, maxLength = 150) => {
-    if (content.length <= maxLength) return content;
+    if (!content || content.length <= maxLength) return content || '';
     return content.substr(0, maxLength) + '...';
   };
 
@@ -94,7 +94,7 @@ const Blog = () => {
                     <div className="post-content">
                       <div className="post-meta">
                         <span className="post-date">{formatDate(post.created_at)}</span>
-                        <span className="post-category">{post.category}</span>
+                        <span className="post-category">{post.category?.name || post.category}</span>
                       </div>
                       <h2 className="post-title">
                         <Link to={`/blog/${post.slug}`}>{post.title}</Link>
@@ -104,11 +104,11 @@ const Blog = () => {
                       </p>
                       <div className="post-footer">
                         <div className="post-tags">
-                          {post.tags && post.tags.split(',').slice(0, 3).map((tag, index) => (
-                            <span key={index} className="tag">
-                              {tag.trim()}
-                            </span>
-                          ))}
+                          {post.tags && post.tags.slice(0, 3).map((tag, index) => (
+                             <span key={index} className="tag">
+                               {tag.name || tag}
+                             </span>
+                           ))}
                         </div>
                         <Link to={`/blog/${post.slug}`} className="read-more">
                           Read More →
