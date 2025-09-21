@@ -17,6 +17,7 @@ import react from '@vitejs/plugin-react'
  * 
  * Defines the build configuration for the development and production environments.
  * Currently configured with React plugin for JSX transformation and Fast Refresh.
+ * Also includes Vitest configuration for testing.
  * 
  * @type {import('vite').UserConfig}
  */
@@ -26,4 +27,35 @@ export default defineConfig({
    * - react(): Enables React support with Fast Refresh for development
    */
   plugins: [react()],
+  
+  /**
+   * Vitest configuration for testing
+   */
+  test: {
+    // Use jsdom environment for DOM testing
+    environment: 'jsdom',
+    
+    // Setup files to run before each test
+    setupFiles: ['./src/test/setup.js'],
+    
+    // Global test configuration
+    globals: true,
+    
+    // CSS handling in tests
+    css: true,
+    
+    // Coverage configuration
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'src/test/',
+        '**/*.test.{js,jsx}',
+        '**/*.config.{js,jsx}',
+        'dist/',
+        'coverage/',
+      ],
+    },
+  },
 })
