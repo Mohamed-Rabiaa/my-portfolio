@@ -12,6 +12,7 @@ This module provides REST API views for the blog functionality including:
 from rest_framework import generics, filters, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import F
 from .models import BlogPost, Category, Tag, Comment
@@ -19,6 +20,11 @@ from .serializers import (
     BlogPostSerializer, BlogPostListSerializer, CategorySerializer,
     TagSerializer, CommentSerializer
 )
+
+class CustomPageNumberPagination(PageNumberPagination):
+    """Custom pagination class that allows dynamic page size."""
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 class BlogPostListView(generics.ListAPIView):
     """
@@ -35,10 +41,11 @@ class BlogPostListView(generics.ListAPIView):
     queryset = BlogPost.objects.filter(status='published')
     serializer_class = BlogPostListSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['category', 'tags', 'featured', 'author']
+    filterset_fields = ['category__slug', 'tags__slug', 'featured', 'author']
     search_fields = ['title', 'excerpt', 'content', 'tags__name']
     ordering_fields = ['published_at', 'views', 'title']
     ordering = ['-published_at']
+    pagination_class = CustomPageNumberPagination
 
 
 class BlogPostDetailView(generics.RetrieveAPIView):
@@ -177,7 +184,8 @@ def blog_stats(request):
             - total_comments: Number of approved comments
     """
     stats = {
-        'total_posts': BlogPost.objects.filter(status='published').count(),
+        'total_posts': BlogPost.objects.count(),
+        'published_posts': BlogPost.objects.filter(status='published').count(),
         'total_categories': Category.objects.count(),
         'total_tags': Tag.objects.count(),
         'total_comments': Comment.objects.filter(approved=True).count(),

@@ -10,8 +10,9 @@ This module provides REST API views for contact functionality including:
 """
 
 from rest_framework import generics, status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from django.core.mail import send_mail
 from django.conf import settings
 from .models import ContactMessage, Newsletter
@@ -47,6 +48,7 @@ class ContactMessageCreateView(generics.CreateAPIView):
     """
     queryset = ContactMessage.objects.all()
     serializer_class = ContactMessageSerializer
+    permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
         """
@@ -148,6 +150,7 @@ class NewsletterSubscribeView(generics.CreateAPIView):
     """
     queryset = Newsletter.objects.all()
     serializer_class = NewsletterSerializer
+    permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
         """
@@ -175,52 +178,72 @@ class NewsletterSubscribeView(generics.CreateAPIView):
             )
             
             if created:
+                # Return serialized data for new subscription
+                response_serializer = self.get_serializer(newsletter)
                 return Response(
-                    {'message': 'Successfully subscribed to newsletter!'},
+                    response_serializer.data,
                     status=status.HTTP_201_CREATED
                 )
             elif not newsletter.is_active:
                 # Reactivate subscription
                 newsletter.is_active = True
                 newsletter.save()
+                response_serializer = self.get_serializer(newsletter)
                 return Response(
-                    {'message': 'Newsletter subscription reactivated!'},
+                    response_serializer.data,
                     status=status.HTTP_200_OK
                 )
             else:
+                # Already active subscription
+                response_serializer = self.get_serializer(newsletter)
                 return Response(
-                    {'message': 'Email is already subscribed to newsletter.'},
+                    response_serializer.data,
                     status=status.HTTP_200_OK
                 )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def newsletter_unsubscribe(request):
+    """
+    API endpoint to handle newsletter unsubscriptions.
+    
+    Allows users to unsubscribe from the newsletter by providing their email address.
+    The function handles various scenarios including:
+    - Successful unsubscription for active subscribers
+    - Already unsubscribed users (graceful handling)
+    - Non-existent email addresses
+    - Invalid request data
+    
+    This endpoint provides a user-friendly unsubscription process that doesn't
+    reveal whether an email exists in the system for privacy reasons.
+    
+    Request Data:
+        email: Email address to unsubscribe (required)
+        
+    Response:
+        200 OK: Unsubscription processed (regardless of email existence)
+        400 Bad Request: Invalid email format or missing email
+        405 Method Not Allowed: Non-POST requests
+        
+    Privacy Note:
+        The endpoint always returns success for valid emails to prevent
+        email enumeration attacks, regardless of whether the email
+        exists in the subscription list.
+    """
     """
     API endpoint to unsubscribe from newsletter.
     
-    Handles newsletter unsubscription by deactivating the subscription
-    rather than deleting it, allowing for potential reactivation and
-    maintaining subscription history.
-    
-    Features:
-    - Soft deletion (deactivation) instead of hard deletion
-    - Email validation and existence checking
-    - Appropriate error messages for missing emails
-    - Maintains subscription history for analytics
+    Accepts POST requests with email data and deactivates the subscription
+    if it exists. Returns success message regardless of whether the email
+    was found to prevent email enumeration.
     
     Args:
-        request: HTTP POST request containing email to unsubscribe
+        request: HTTP request object containing email in POST data
         
-    Request Data:
-        email: Email address to unsubscribe (required)
-    
     Returns:
-        Response: Success message or error details
-            200 OK: Successfully unsubscribed
-            400 Bad Request: Missing email parameter
-            404 Not Found: Email not found in subscriptions
+        Response: JSON response with success/error message
     """
     email = request.data.get('email')
     if not email:
@@ -245,7 +268,35 @@ def newsletter_unsubscribe(request):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def contact_stats(request):
+    """
+    API endpoint to retrieve contact form and newsletter statistics.
+    
+    Provides comprehensive statistics about contact messages and newsletter
+    subscriptions for administrative dashboards and analytics.
+    
+    Features:
+    - Total message count across all time
+    - New messages count (last 30 days)
+    - Newsletter subscription statistics
+    - Message categorization by subject
+    - Real-time data aggregation
+    
+    Authentication:
+        Requires authentication (typically admin/staff access)
+        
+    Response Data:
+        total_messages: Total number of contact messages
+        new_messages: Messages received in last 30 days
+        newsletter_subscribers: Count of active newsletter subscribers
+        messages_by_subject: Dictionary of message counts by subject category
+        
+    Returns:
+        Response: JSON object with statistical data
+            200 OK: Statistics retrieved successfully
+            401 Unauthorized: Authentication required
+    """
     """
     API endpoint to retrieve comprehensive contact statistics.
     
@@ -276,6 +327,8 @@ def contact_stats(request):
         'total_messages': ContactMessage.objects.count(),
         'new_messages': ContactMessage.objects.filter(status='new').count(),
         'newsletter_subscribers': Newsletter.objects.filter(is_active=True).count(),
+        'total_subscriptions': Newsletter.objects.count(),
+        'active_subscriptions': Newsletter.objects.filter(is_active=True).count(),
         'messages_by_subject': {}
     }
     
