@@ -1,7 +1,31 @@
 #!/usr/bin/env python
 """
-Script to create sample data for the portfolio project.
-Run this script with: python create_sample_data.py
+Sample Data Creation Script
+
+This module provides functionality to create sample data for the portfolio application.
+It generates realistic test data for blog posts, projects, contact messages, and newsletter
+subscriptions to facilitate development, testing, and demonstration purposes.
+
+The script uses Django's ORM to create database entries with realistic content,
+including proper relationships between models and varied data types.
+
+Functions:
+    create_sample_blog_posts: Creates sample blog posts with varied content
+    create_sample_projects: Creates sample portfolio projects
+    create_sample_contact_messages: Creates sample contact form submissions
+    create_sample_newsletter_subscriptions: Creates sample newsletter subscribers
+    main: Main function that orchestrates the sample data creation process
+
+Usage:
+    python create_sample_data.py
+
+Requirements:
+    - Django environment must be properly configured
+    - All required models must be available and migrated
+    - Faker library for generating realistic fake data
+
+Author: Your Name
+Version: 1.0.0
 """
 
 import os
@@ -9,516 +33,432 @@ import sys
 import django
 from datetime import datetime, timedelta
 from django.utils import timezone
+from faker import Faker
 
-# Setup Django environment
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myportfolio.settings')
+# Add the project directory to the Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Configure Django settings
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'portfolio.settings')
 django.setup()
 
-from django.contrib.auth.models import User
-from portfolio.models import Skill, Project, ProjectImage
-from blog.models import Category, Tag, BlogPost, Comment
+# Import models after Django setup
+from blog.models import BlogPost, Category, Tag
+from portfolio.models import Project, Technology
 from contact.models import ContactMessage, Newsletter
 
-def create_sample_data():
-    print("Creating sample data...")
+# Initialize Faker for generating realistic fake data
+fake = Faker()
+
+
+def create_sample_blog_posts(count=10):
+    """
+    Create sample blog posts with realistic content and metadata.
     
-    # Create or get admin user
-    admin_user, created = User.objects.get_or_create(
-        username='admin',
-        defaults={
-            'email': 'admin@example.com',
-            'first_name': 'Admin',
-            'last_name': 'User',
-            'is_staff': True,
-            'is_superuser': True
-        }
-    )
-    if created:
-        admin_user.set_password('admin123')
-        admin_user.save()
+    Generates blog posts with varied titles, content, categories, tags,
+    and publication dates. Each post includes proper SEO metadata and
+    realistic engagement metrics.
     
-    # Create Skills
-    skills_data = [
-        {'name': 'Python', 'category': 'backend', 'proficiency': 4},
-        {'name': 'Django', 'category': 'backend', 'proficiency': 4},
-        {'name': 'React', 'category': 'frontend', 'proficiency': 3},
-        {'name': 'JavaScript', 'category': 'frontend', 'proficiency': 4},
-        {'name': 'PostgreSQL', 'category': 'database', 'proficiency': 3},
-        {'name': 'Docker', 'category': 'tools', 'proficiency': 3},
-        {'name': 'Git', 'category': 'tools', 'proficiency': 4},
-        {'name': 'HTML/CSS', 'category': 'frontend', 'proficiency': 4},
-    ]
+    Args:
+        count (int): Number of blog posts to create. Defaults to 10.
+        
+    Returns:
+        list: List of created BlogPost instances
+        
+    Raises:
+        Exception: If there's an error creating blog posts or related objects
+        
+    Example:
+        >>> posts = create_sample_blog_posts(5)
+        >>> print(f"Created {len(posts)} blog posts")
+    """
+    print(f"Creating {count} sample blog posts...")
     
-    for skill_data in skills_data:
-        skill, created = Skill.objects.get_or_create(
-            name=skill_data['name'],
-            defaults=skill_data
-        )
-        if created:
-            print(f"Created skill: {skill.name}")
-    
-    # Create Projects
-    projects_data = [
-        {
-            'title': 'E-commerce Platform',
-            'description': 'A full-stack e-commerce platform built with Django and React. Features include user authentication, product catalog, shopping cart, and payment integration.',
-            'detailed_description': 'This comprehensive e-commerce platform demonstrates modern web development practices with a Django REST API backend and React frontend. The platform includes user registration and authentication, product management, shopping cart functionality, order processing, and secure payment integration using Stripe.',
-            'github_url': 'https://github.com/example/ecommerce-platform',
-            'live_url': 'https://ecommerce-demo.example.com',
-            'featured': True,
-        },
-        {
-            'title': 'Task Management App',
-            'description': 'A collaborative task management application with real-time updates, team collaboration features, and project tracking.',
-            'detailed_description': 'Built with Django Channels for WebSocket support, this task management app allows teams to collaborate in real-time. Features include project creation, task assignment, progress tracking, file attachments, and real-time notifications.',
-            'github_url': 'https://github.com/example/task-manager',
-            'live_url': 'https://taskmanager-demo.example.com',
-            'featured': True,
-        },
-        {
-            'title': 'Weather Dashboard',
-            'description': 'A responsive weather dashboard that displays current weather conditions and forecasts for multiple cities.',
-            'detailed_description': 'This weather dashboard integrates with multiple weather APIs to provide accurate weather information. Built with React and styled with Tailwind CSS, it features location-based weather, 7-day forecasts, weather maps, and customizable dashboard widgets.',
-            'github_url': 'https://github.com/example/weather-dashboard',
-            'live_url': 'https://weather-demo.example.com',
-            'featured': False,
-        },
-        {
-            'title': 'Portfolio Website',
-            'description': 'This very portfolio website built with Django REST Framework and React.',
-            'detailed_description': 'A modern portfolio website showcasing projects, skills, and blog posts. Built with Django REST Framework for the backend API and React with Tailwind CSS for the frontend. Features include project showcase, blog functionality, contact forms, and admin panel.',
-            'github_url': 'https://github.com/example/portfolio',
-            'live_url': 'https://portfolio.example.com',
-            'featured': True,
-        },
-    ]
-    
-    for project_data in projects_data:
-        project, created = Project.objects.get_or_create(
-            title=project_data['title'],
-            defaults=project_data
-        )
-        if created:
-            print(f"Created project: {project.title}")
-            
-            # Add technologies to projects
-            if project.title == 'E-commerce Platform':
-                technologies = Skill.objects.filter(name__in=['Python', 'Django', 'React', 'PostgreSQL'])
-                project.technologies.set(technologies)
-            elif project.title == 'Task Management App':
-                technologies = Skill.objects.filter(name__in=['Python', 'Django', 'JavaScript', 'PostgreSQL'])
-                project.technologies.set(technologies)
-            elif project.title == 'Weather Dashboard':
-                technologies = Skill.objects.filter(name__in=['React', 'JavaScript', 'HTML/CSS'])
-                project.technologies.set(technologies)
-            elif project.title == 'Portfolio Website':
-                technologies = Skill.objects.filter(name__in=['Python', 'Django', 'React', 'HTML/CSS'])
-                project.technologies.set(technologies)
-    
-    # Create Blog Categories
+    # Sample categories for blog posts
     categories_data = [
-        {'name': 'Web Development', 'description': 'Articles about web development technologies and practices'},
-        {'name': 'Python', 'description': 'Python programming tutorials and tips'},
-        {'name': 'React', 'description': 'React.js tutorials and best practices'},
-        {'name': 'DevOps', 'description': 'DevOps tools and deployment strategies'},
-        {'name': 'Career', 'description': 'Career advice and professional development'},
+        {'name': 'Web Development', 'slug': 'web-development'},
+        {'name': 'Mobile Development', 'slug': 'mobile-development'},
+        {'name': 'Data Science', 'slug': 'data-science'},
+        {'name': 'Machine Learning', 'slug': 'machine-learning'},
+        {'name': 'DevOps', 'slug': 'devops'},
+        {'name': 'UI/UX Design', 'slug': 'ui-ux-design'},
     ]
     
+    # Sample tags for blog posts
+    tags_data = [
+        'Python', 'JavaScript', 'React', 'Django', 'Node.js', 'Vue.js',
+        'Angular', 'TypeScript', 'Docker', 'Kubernetes', 'AWS', 'Azure',
+        'Machine Learning', 'AI', 'Data Analysis', 'PostgreSQL', 'MongoDB'
+    ]
+    
+    # Create categories if they don't exist
+    categories = []
     for cat_data in categories_data:
         category, created = Category.objects.get_or_create(
             name=cat_data['name'],
-            defaults=cat_data
+            defaults={'slug': cat_data['slug']}
         )
-        if created:
-            print(f"Created category: {category.name}")
+        categories.append(category)
     
-    # Create Blog Tags
-    tags_data = [
-        'django', 'react', 'python', 'javascript', 'tutorial', 'tips', 'best-practices',
-        'deployment', 'database', 'api', 'frontend', 'backend', 'full-stack'
-    ]
-    
+    # Create tags if they don't exist
+    tags = []
     for tag_name in tags_data:
         tag, created = Tag.objects.get_or_create(name=tag_name)
-        if created:
-            print(f"Created tag: {tag.name}")
+        tags.append(tag)
     
-    # Create Blog Posts
-    posts_data = [
-        {
-            'title': 'Building RESTful APIs with Django REST Framework',
-            'excerpt': 'Learn how to build robust and scalable APIs using Django REST Framework with practical examples and best practices.',
-            'content': '''
-# Building RESTful APIs with Django REST Framework
+    posts = []
+    for i in range(count):
+        # Generate realistic blog post data
+        title = fake.sentence(nb_words=6).rstrip('.')
+        content = fake.text(max_nb_chars=2000)
+        excerpt = fake.text(max_nb_chars=200)
+        
+        # Create blog post
+        post = BlogPost.objects.create(
+            title=title,
+            slug=fake.slug(),
+            content=content,
+            excerpt=excerpt,
+            author=fake.name(),
+            category=fake.random_element(categories),
+            featured_image=f"blog/sample-{i+1}.jpg",
+            is_published=fake.boolean(chance_of_getting_true=80),
+            published_at=fake.date_time_between(
+                start_date='-1y', 
+                end_date='now', 
+                tzinfo=timezone.get_current_timezone()
+            ),
+            views_count=fake.random_int(min=10, max=1000),
+            reading_time=fake.random_int(min=2, max=15),
+            meta_description=fake.text(max_nb_chars=160),
+            meta_keywords=', '.join(fake.words(nb=5))
+        )
+        
+        # Add random tags to the post
+        post_tags = fake.random_elements(tags, length=fake.random_int(min=2, max=5), unique=True)
+        post.tags.set(post_tags)
+        
+        posts.append(post)
+        print(f"  Created blog post: {post.title}")
+    
+    return posts
 
-Django REST Framework (DRF) is a powerful toolkit for building Web APIs in Django. In this tutorial, we'll explore how to create robust and scalable APIs.
 
-## Getting Started
-
-First, install Django REST Framework:
-
-```bash
-pip install djangorestframework
-```
-
-## Creating Your First API
-
-Let's start by creating a simple API for a blog application:
-
-```python
-from rest_framework import serializers, viewsets
-from .models import BlogPost
-
-class BlogPostSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BlogPost
-        fields = '__all__'
-
-class BlogPostViewSet(viewsets.ModelViewSet):
-    queryset = BlogPost.objects.all()
-    serializer_class = BlogPostSerializer
-```
-
-## Best Practices
-
-1. Use proper HTTP status codes
-2. Implement pagination for large datasets
-3. Add proper authentication and permissions
-4. Use serializers for data validation
-5. Document your API with tools like Swagger
-
-This is just the beginning of what you can achieve with DRF!
-            ''',
-            'category': 'Web Development',
-            'author': admin_user,
-            'status': 'published',
-            'featured': True,
-            'published_at': timezone.now() - timedelta(days=7),
-            'tags': ['django', 'api', 'tutorial', 'backend']
-        },
-        {
-            'title': 'React Hooks: A Complete Guide',
-            'excerpt': 'Master React Hooks with practical examples and learn how to build more efficient functional components.',
-            'content': '''
-# React Hooks: A Complete Guide
-
-React Hooks revolutionized how we write React components. Let's dive deep into the most commonly used hooks.
-
-## useState Hook
-
-The useState hook allows you to add state to functional components:
-
-```javascript
-import React, { useState } from 'react';
-
-function Counter() {
-  const [count, setCount] = useState(0);
-
-  return (
-    <div>
-      <p>You clicked {count} times</p>
-      <button onClick={() => setCount(count + 1)}>
-        Click me
-      </button>
-    </div>
-  );
-}
-```
-
-## useEffect Hook
-
-The useEffect hook lets you perform side effects in functional components:
-
-```javascript
-import React, { useState, useEffect } from 'react';
-
-function Example() {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    document.title = `You clicked ${count} times`;
-  });
-
-  return (
-    <div>
-      <p>You clicked {count} times</p>
-      <button onClick={() => setCount(count + 1)}>
-        Click me
-      </button>
-    </div>
-  );
-}
-```
-
-## Custom Hooks
-
-You can also create your own hooks to reuse stateful logic between components.
-
-Hooks make React code more reusable and easier to test!
-            ''',
-            'category': 'React',
-            'author': admin_user,
-            'status': 'published',
-            'featured': True,
-            'published_at': timezone.now() - timedelta(days=14),
-            'tags': ['react', 'javascript', 'tutorial', 'frontend']
-        },
-        {
-            'title': 'Python Best Practices for Clean Code',
-            'excerpt': 'Essential Python coding practices for writing clean, maintainable, and professional code.',
-            'content': '''
-# Python Best Practices for Clean Code
-
-Writing clean, maintainable Python code is essential for any developer. Here are some best practices to follow.
-
-## PEP 8 Style Guide
-
-Always follow PEP 8 for consistent code formatting:
-
-```python
-# Good
-def calculate_total_price(items, tax_rate):
-    subtotal = sum(item.price for item in items)
-    tax = subtotal * tax_rate
-    return subtotal + tax
-
-# Bad
-def calculateTotalPrice(items,tax_rate):
-    subtotal=sum(item.price for item in items)
-    tax=subtotal*tax_rate
-    return subtotal+tax
-```
-
-## Use Type Hints
-
-Type hints make your code more readable and help catch errors:
-
-```python
-from typing import List, Optional
-
-def process_items(items: List[str], max_length: Optional[int] = None) -> List[str]:
-    if max_length is None:
-        return items
-    return [item for item in items if len(item) <= max_length]
-```
-
-## Write Docstrings
-
-Document your functions and classes:
-
-```python
-def fibonacci(n: int) -> int:
+def create_sample_projects(count=8):
     """
-    Calculate the nth Fibonacci number.
+    Create sample portfolio projects with realistic details and technologies.
+    
+    Generates portfolio projects with varied titles, descriptions, technologies,
+    and project metadata including GitHub links, live demos, and project status.
     
     Args:
-        n: The position in the Fibonacci sequence
+        count (int): Number of projects to create. Defaults to 8.
         
     Returns:
-        The nth Fibonacci number
+        list: List of created Project instances
         
     Raises:
-        ValueError: If n is negative
+        Exception: If there's an error creating projects or related objects
+        
+    Example:
+        >>> projects = create_sample_projects(6)
+        >>> print(f"Created {len(projects)} portfolio projects")
     """
-    if n < 0:
-        raise ValueError("n must be non-negative")
-    if n <= 1:
-        return n
-    return fibonacci(n - 1) + fibonacci(n - 2)
-```
-
-Following these practices will make your Python code more professional and maintainable!
-            ''',
-            'category': 'Python',
-            'author': admin_user,
-            'status': 'published',
-            'featured': False,
-            'published_at': timezone.now() - timedelta(days=21),
-            'tags': ['python', 'best-practices', 'tutorial']
-        },
-        {
-            'title': 'Deploying Django Applications with Docker',
-            'excerpt': 'Learn how to containerize and deploy Django applications using Docker for consistent deployments.',
-            'content': '''
-# Deploying Django Applications with Docker
-
-Docker makes it easy to deploy Django applications consistently across different environments.
-
-## Creating a Dockerfile
-
-Here's a basic Dockerfile for a Django application:
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-EXPOSE 8000
-
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-```
-
-## Docker Compose for Development
-
-Use docker-compose.yml for local development:
-
-```yaml
-version: '3.8'
-
-services:
-  web:
-    build: .
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/app
-    depends_on:
-      - db
-    environment:
-      - DEBUG=1
-      - DATABASE_URL=postgresql://user:password@db:5432/mydb
-
-  db:
-    image: postgres:13
-    environment:
-      - POSTGRES_DB=mydb
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
-```
-
-## Production Considerations
-
-For production deployments:
-
-1. Use multi-stage builds to reduce image size
-2. Run as non-root user
-3. Use environment variables for configuration
-4. Implement health checks
-5. Use a reverse proxy like Nginx
-
-Docker simplifies deployment and ensures consistency across environments!
-            ''',
-            'category': 'DevOps',
-            'author': admin_user,
-            'status': 'published',
-            'featured': False,
-            'published_at': timezone.now() - timedelta(days=28),
-            'tags': ['django', 'docker', 'deployment', 'devops']
-        },
+    print(f"Creating {count} sample projects...")
+    
+    # Sample technologies for projects
+    technologies_data = [
+        {'name': 'Python', 'category': 'Backend'},
+        {'name': 'JavaScript', 'category': 'Frontend'},
+        {'name': 'React', 'category': 'Frontend'},
+        {'name': 'Django', 'category': 'Backend'},
+        {'name': 'Node.js', 'category': 'Backend'},
+        {'name': 'PostgreSQL', 'category': 'Database'},
+        {'name': 'MongoDB', 'category': 'Database'},
+        {'name': 'Docker', 'category': 'DevOps'},
+        {'name': 'AWS', 'category': 'Cloud'},
+        {'name': 'Vue.js', 'category': 'Frontend'},
     ]
     
-    for post_data in posts_data:
-        category = Category.objects.get(name=post_data['category'])
-        tags = post_data.pop('tags')
-        
-        post, created = BlogPost.objects.get_or_create(
-            title=post_data['title'],
-            defaults={**post_data, 'category': category}
+    # Create technologies if they don't exist
+    technologies = []
+    for tech_data in technologies_data:
+        technology, created = Technology.objects.get_or_create(
+            name=tech_data['name'],
+            defaults={'category': tech_data['category']}
         )
-        
-        if created:
-            print(f"Created blog post: {post.title}")
-            # Add tags
-            for tag_name in tags:
-                tag, created = Tag.objects.get_or_create(name=tag_name)
-                post.tags.add(tag)
+        technologies.append(technology)
     
-    # Create comments
-    comments_data = [
-        {
-            'post': 'Building RESTful APIs with Django REST Framework',
-            'name': 'John Developer',
-            'email': 'john@example.com',
-            'content': 'Great tutorial! This helped me understand DRF much better.',
-            'approved': True,
-        },
-        {
-            'post': 'React Hooks: A Complete Guide',
-            'name': 'Sarah Frontend',
-            'email': 'sarah@example.com',
-            'content': 'Excellent explanation of hooks. The examples are very clear.',
-            'approved': True,
-        },
-        {
-            'post': 'Python Best Practices for Clean Code',
-            'name': 'Mike Pythonista',
-            'email': 'mike@example.com',
-            'content': 'These practices have really improved my code quality. Thanks!',
-            'approved': True,
-        },
+    # Sample project types and descriptions
+    project_types = [
+        'E-commerce Platform', 'Social Media App', 'Task Management Tool',
+        'Blog Platform', 'Portfolio Website', 'API Service', 'Mobile App',
+        'Data Dashboard', 'Chat Application', 'Learning Management System'
     ]
-
-    for comment_data in comments_data:
-        post_title = comment_data.pop('post')
-        post = BlogPost.objects.get(title=post_title)
-        Comment.objects.get_or_create(
-            post=post,
-            name=comment_data['name'],
-            email=comment_data['email'],
-            defaults=comment_data
+    
+    projects = []
+    for i in range(count):
+        # Generate realistic project data
+        project_type = fake.random_element(project_types)
+        title = f"{fake.company()} {project_type}"
+        description = fake.text(max_nb_chars=500)
+        
+        # Create project
+        project = Project.objects.create(
+            title=title,
+            slug=fake.slug(),
+            description=description,
+            short_description=fake.text(max_nb_chars=150),
+            image=f"projects/sample-project-{i+1}.jpg",
+            github_url=f"https://github.com/{fake.user_name()}/{fake.slug()}",
+            live_url=f"https://{fake.slug()}.{fake.random_element(['com', 'net', 'org'])}",
+            status=fake.random_element(['completed', 'in_progress', 'planning']),
+            featured=fake.boolean(chance_of_getting_true=30),
+            start_date=fake.date_between(start_date='-2y', end_date='-6m'),
+            end_date=fake.date_between(start_date='-6m', end_date='today') if fake.boolean() else None,
+            client=fake.company() if fake.boolean(chance_of_getting_true=40) else None,
+            order=i + 1
         )
+        
+        # Add random technologies to the project
+        project_technologies = fake.random_elements(
+            technologies, 
+            length=fake.random_int(min=3, max=6), 
+            unique=True
+        )
+        project.technologies.set(project_technologies)
+        
+        projects.append(project)
+        print(f"  Created project: {project.title}")
     
-    # Create sample contact messages
-    ContactMessage.objects.get_or_create(
-        email='client@example.com',
-        defaults={
-            'name': 'Potential Client',
-            'subject': 'Project Inquiry',
-            'message': 'Hi, I\'m interested in discussing a web development project. Could we schedule a call?',
-            'status': 'new'
-        }
-    )
+    return projects
+
+
+def create_sample_contact_messages(count=15):
+    """
+    Create sample contact form messages with realistic inquiries.
     
-    ContactMessage.objects.get_or_create(
-        email='recruiter@company.com',
-        defaults={
-            'name': 'Tech Recruiter',
-            'subject': 'Job Opportunity',
-            'message': 'We have an exciting opportunity that might interest you. Please let me know if you\'re open to discussing it.',
-            'status': 'read'
-        }
-    )
+    Generates contact messages with varied subjects, content, and sender
+    information to simulate real user inquiries and feedback.
     
-    # Create sample newsletter subscriptions
-    Newsletter.objects.get_or_create(
-        email='subscriber1@example.com',
-        defaults={
-            'name': 'Tech Enthusiast',
-            'is_active': True
-        }
-    )
+    Args:
+        count (int): Number of contact messages to create. Defaults to 15.
+        
+    Returns:
+        list: List of created ContactMessage instances
+        
+    Raises:
+        Exception: If there's an error creating contact messages
+        
+    Example:
+        >>> messages = create_sample_contact_messages(10)
+        >>> print(f"Created {len(messages)} contact messages")
+    """
+    print(f"Creating {count} sample contact messages...")
     
-    Newsletter.objects.get_or_create(
-        email='subscriber2@example.com',
-        defaults={
-            'name': 'Web Developer',
-            'is_active': True
-        }
-    )
+    # Sample subjects for contact messages
+    subjects = [
+        'project_inquiry', 'collaboration', 'job_opportunity', 
+        'consultation', 'feedback', 'support', 'other'
+    ]
     
-    print("Sample data created successfully!")
-    print("\nSummary:")
-    print(f"- Skills: {Skill.objects.count()}")
-    print(f"- Projects: {Project.objects.count()}")
-    print(f"- Blog Categories: {Category.objects.count()}")
-    print(f"- Blog Tags: {Tag.objects.count()}")
-    print(f"- Blog Posts: {BlogPost.objects.count()}")
-    print(f"- Comments: {Comment.objects.count()}")
-    print(f"- Contact Messages: {ContactMessage.objects.count()}")
-    print(f"- Newsletter Subscriptions: {Newsletter.objects.count()}")
-    print("\nAdmin credentials:")
-    print("Username: admin")
-    print("Password: admin123")
+    # Sample message templates for different subjects
+    message_templates = {
+        'project_inquiry': "I'm interested in discussing a potential project with you. Could we schedule a call?",
+        'collaboration': "I'd love to collaborate on an upcoming project. Are you available for partnerships?",
+        'job_opportunity': "We have an exciting job opportunity that might interest you. Would you like to learn more?",
+        'consultation': "I need some technical consultation for my project. What are your rates?",
+        'feedback': "I really enjoyed your recent blog post about {}. Great insights!",
+        'support': "I'm having some issues with implementing the solution from your tutorial. Could you help?",
+        'other': "I have a question about your work and would appreciate your thoughts."
+    }
+    
+    messages = []
+    for i in range(count):
+        # Generate realistic contact data
+        subject = fake.random_element(subjects)
+        name = fake.name()
+        email = fake.email()
+        phone = fake.phone_number() if fake.boolean(chance_of_getting_true=60) else None
+        company = fake.company() if fake.boolean(chance_of_getting_true=40) else None
+        
+        # Generate message based on subject
+        base_message = message_templates.get(subject, fake.text(max_nb_chars=300))
+        if '{}' in base_message:
+            base_message = base_message.format(fake.word())
+        
+        message_content = f"{base_message}\n\n{fake.text(max_nb_chars=200)}"
+        
+        # Create contact message
+        message = ContactMessage.objects.create(
+            name=name,
+            email=email,
+            phone=phone,
+            company=company,
+            subject=subject,
+            message=message_content,
+            status=fake.random_element(['unread', 'read', 'replied', 'archived']),
+            ip_address=fake.ipv4(),
+            user_agent=fake.user_agent(),
+            created_at=fake.date_time_between(
+                start_date='-3m', 
+                end_date='now', 
+                tzinfo=timezone.get_current_timezone()
+            )
+        )
+        
+        messages.append(message)
+        print(f"  Created contact message from: {message.name}")
+    
+    return messages
+
+
+def create_sample_newsletter_subscriptions(count=25):
+    """
+    Create sample newsletter subscriptions with realistic subscriber data.
+    
+    Generates newsletter subscriptions with varied email addresses and names
+    to simulate a realistic subscriber base for testing email campaigns.
+    
+    Args:
+        count (int): Number of newsletter subscriptions to create. Defaults to 25.
+        
+    Returns:
+        list: List of created Newsletter instances
+        
+    Raises:
+        Exception: If there's an error creating newsletter subscriptions
+        
+    Example:
+        >>> subscriptions = create_sample_newsletter_subscriptions(20)
+        >>> print(f"Created {len(subscriptions)} newsletter subscriptions")
+    """
+    print(f"Creating {count} sample newsletter subscriptions...")
+    
+    subscriptions = []
+    for i in range(count):
+        # Generate realistic subscriber data
+        name = fake.name() if fake.boolean(chance_of_getting_true=70) else None
+        email = fake.email()
+        
+        # Ensure unique email addresses
+        while Newsletter.objects.filter(email=email).exists():
+            email = fake.email()
+        
+        # Create newsletter subscription
+        subscription = Newsletter.objects.create(
+            email=email,
+            name=name,
+            is_active=fake.boolean(chance_of_getting_true=85),
+            ip_address=fake.ipv4(),
+            subscribed_at=fake.date_time_between(
+                start_date='-6m', 
+                end_date='now', 
+                tzinfo=timezone.get_current_timezone()
+            )
+        )
+        
+        subscriptions.append(subscription)
+        print(f"  Created newsletter subscription: {subscription.email}")
+    
+    return subscriptions
+
+
+def main():
+    """
+    Main function that orchestrates the sample data creation process.
+    
+    Executes all sample data creation functions in the proper order,
+    handles any errors that occur during the process, and provides
+    a summary of the created data.
+    
+    The function creates:
+    - Blog posts with categories and tags
+    - Portfolio projects with technologies
+    - Contact messages with varied inquiries
+    - Newsletter subscriptions
+    
+    Returns:
+        dict: Summary of created objects with counts for each type
+        
+    Raises:
+        Exception: If there's a critical error during data creation
+        
+    Example:
+        >>> summary = main()
+        >>> print(f"Created {summary['total']} total objects")
+    """
+    print("=" * 50)
+    print("CREATING SAMPLE DATA FOR PORTFOLIO APPLICATION")
+    print("=" * 50)
+    
+    summary = {
+        'blog_posts': 0,
+        'projects': 0,
+        'contact_messages': 0,
+        'newsletter_subscriptions': 0,
+        'total': 0
+    }
+    
+    try:
+        # Create sample blog posts
+        blog_posts = create_sample_blog_posts(10)
+        summary['blog_posts'] = len(blog_posts)
+        print(f"✓ Created {len(blog_posts)} blog posts")
+        
+        # Create sample projects
+        projects = create_sample_projects(8)
+        summary['projects'] = len(projects)
+        print(f"✓ Created {len(projects)} projects")
+        
+        # Create sample contact messages
+        contact_messages = create_sample_contact_messages(15)
+        summary['contact_messages'] = len(contact_messages)
+        print(f"✓ Created {len(contact_messages)} contact messages")
+        
+        # Create sample newsletter subscriptions
+        newsletter_subs = create_sample_newsletter_subscriptions(25)
+        summary['newsletter_subscriptions'] = len(newsletter_subs)
+        print(f"✓ Created {len(newsletter_subs)} newsletter subscriptions")
+        
+        # Calculate total
+        summary['total'] = sum([
+            summary['blog_posts'],
+            summary['projects'], 
+            summary['contact_messages'],
+            summary['newsletter_subscriptions']
+        ])
+        
+        print("\n" + "=" * 50)
+        print("SAMPLE DATA CREATION COMPLETED SUCCESSFULLY!")
+        print("=" * 50)
+        print(f"Total objects created: {summary['total']}")
+        print(f"  - Blog posts: {summary['blog_posts']}")
+        print(f"  - Projects: {summary['projects']}")
+        print(f"  - Contact messages: {summary['contact_messages']}")
+        print(f"  - Newsletter subscriptions: {summary['newsletter_subscriptions']}")
+        print("=" * 50)
+        
+        return summary
+        
+    except Exception as e:
+        print(f"\n❌ Error creating sample data: {str(e)}")
+        print("Please check your Django configuration and database connection.")
+        raise
+
 
 if __name__ == '__main__':
-    create_sample_data()
+    """
+    Entry point for the script when run directly.
+    
+    Executes the main function and handles any top-level exceptions
+    that might occur during the sample data creation process.
+    """
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Sample data creation interrupted by user.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n❌ Fatal error: {str(e)}")
+        sys.exit(1)
