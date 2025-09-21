@@ -1,44 +1,6 @@
 #!/usr/bin/env python
 """
-Sample Data Creation Script for MyPortfolio Project
-
-This utility script creates comprehensive sample data for the MyPortfolio project,
-populating all models with realistic content for development and testing purposes.
-The script creates a complete portfolio ecosystem including skills, projects, blog
-content, and contact information.
-
-Features:
-- Creates admin user with default credentials
-- Populates portfolio skills across different categories
-- Generates sample projects with technologies and descriptions
-- Creates blog categories, tags, and detailed blog posts
-- Adds sample comments to blog posts
-- Generates contact messages and newsletter subscriptions
-- Provides comprehensive summary of created data
-
-Usage:
-    python create_sample_data.py
-
-Requirements:
-- Django environment must be properly configured
-- All models must be migrated before running
-- Script should be run from the project root directory
-
-Data Created:
-- Admin user (username: admin, password: admin123)
-- 8 skills across backend, frontend, database, and tools categories
-- 4 sample projects with realistic descriptions and technology stacks
-- 5 blog categories covering web development topics
-- 13 blog tags for content organization
-- 3 detailed blog posts with markdown content
-- Sample comments for blog engagement
-- Contact messages demonstrating different inquiry types
-- Newsletter subscriptions for testing email functionality
-
-Security Note:
-This script is intended for development use only. The default admin
-credentials should be changed in production environments.
-
+Script to create sample data for the portfolio project.
 Run this script with: python create_sample_data.py
 """
 
@@ -58,29 +20,7 @@ from blog.models import Category, Tag, BlogPost, Comment
 from contact.models import ContactMessage, Newsletter
 
 def create_sample_data():
-    """
-    Main function to create comprehensive sample data for the portfolio project.
-    
-    This function orchestrates the creation of all sample data including users,
-    portfolio content, blog posts, and contact information. It uses get_or_create
-    methods to avoid duplicating data on multiple runs.
-    
-    The function creates data in a logical order to handle foreign key relationships:
-    1. Admin user for content authorship
-    2. Skills for project technologies
-    3. Projects with technology associations
-    4. Blog categories and tags
-    5. Blog posts with category and tag relationships
-    6. Comments for blog engagement
-    7. Contact messages and newsletter subscriptions
-    
-    Returns:
-        None: Prints progress and summary information to console
-        
-    Raises:
-        Django database errors if models are not properly migrated
-        or if there are constraint violations
-    """
+    print("Creating sample data...")
     
     # Create or get admin user
     admin_user, created = User.objects.get_or_create(

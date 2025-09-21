@@ -1,25 +1,94 @@
+/**
+ * @fileoverview Home page component for the Portfolio application.
+ * Serves as the main landing page showcasing skills, featured projects, and recent blog posts.
+ * 
+ * @author Portfolio Application
+ * @version 1.0.0
+ */
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import './Home.css';
 
+/**
+ * Home Component - Main landing page of the portfolio application.
+ * 
+ * This component provides:
+ * - Hero section with introduction and call-to-action buttons
+ * - Skills showcase with proficiency levels and categories
+ * - Featured projects display with technology tags and links
+ * - Recent blog posts preview with metadata
+ * - Navigation links to detailed pages
+ * 
+ * @component
+ * @returns {JSX.Element} Complete home page with multiple content sections
+ * 
+ * @example
+ * // Used in App.jsx routing
+ * <Route path="/" element={<Home />} />
+ * 
+ * Features:
+ * - Fetches data from Django REST API endpoints
+ * - Responsive grid layouts for content sections
+ * - Dynamic skill proficiency visualization
+ * - External links with security attributes
+ * - Error handling for API requests
+ */
 const Home = () => {
+  /**
+   * State for storing skills data from the API.
+   * Limited to first 6 skills for homepage display.
+   * 
+   * @type {Array<Object>} Array of skill objects with name, category, proficiency
+   */
   const [skills, setSkills] = useState([]);
+  
+  /**
+   * State for storing featured projects data from the API.
+   * Filtered to show only featured projects, limited to 3.
+   * 
+   * @type {Array<Object>} Array of project objects with title, description, technologies
+   */
   const [featuredProjects, setFeaturedProjects] = useState([]);
+  
+  /**
+   * State for storing recent blog posts data from the API.
+   * Limited to 3 most recent posts for homepage preview.
+   * 
+   * @type {Array<Object>} Array of blog post objects with title, excerpt, metadata
+   */
   const [recentPosts, setRecentPosts] = useState([]);
 
+  /**
+   * Effect hook to fetch all required data when component mounts.
+   * Makes parallel API calls to portfolio and blog endpoints.
+   * Handles errors gracefully with console logging.
+   */
   useEffect(() => {
+    /**
+     * Async function to fetch data from multiple API endpoints.
+     * 
+     * Fetches:
+     * - Skills: First 6 skills for skills section
+     * - Projects: Featured projects only, limited to 3
+     * - Blog Posts: Most recent 3 posts for preview
+     * 
+     * @async
+     * @function fetchData
+     * @throws {Error} Logs API errors to console
+     */
     const fetchData = async () => {
       try {
-        // Fetch skills
+        // Fetch skills from portfolio API
         const skillsResponse = await axios.get('http://127.0.0.1:8000/api/portfolio/skills/');
         setSkills(skillsResponse.data.results.slice(0, 6)); // Show first 6 skills
 
-        // Fetch featured projects
+        // Fetch featured projects from portfolio API
         const projectsResponse = await axios.get('http://127.0.0.1:8000/api/portfolio/projects/');
         setFeaturedProjects(projectsResponse.data.results.filter(project => project.featured).slice(0, 3));
 
-        // Fetch recent blog posts
+        // Fetch recent blog posts from blog API
         const postsResponse = await axios.get('http://127.0.0.1:8000/api/blog/posts/');
         setRecentPosts(postsResponse.data.results.slice(0, 3));
       } catch (error) {
@@ -32,7 +101,7 @@ const Home = () => {
 
   return (
     <div className="home">
-      {/* Hero Section */}
+      {/* Hero Section - Main introduction and call-to-action */}
       <section className="hero">
         <div className="hero-container">
           <div className="hero-content">
@@ -42,9 +111,11 @@ const Home = () => {
               Welcome to my portfolio where you can explore my projects and read my thoughts on development.
             </p>
             <div className="hero-buttons">
+              {/* Primary CTA to portfolio */}
               <Link to="/portfolio" className="btn btn-primary">
                 View My Work
               </Link>
+              {/* Secondary CTA to contact */}
               <Link to="/contact" className="btn btn-secondary">
                 Get In Touch
               </Link>
@@ -53,7 +124,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Skills Section */}
+      {/* Skills Section - Showcase of technical skills with proficiency levels */}
       <section className="skills-section">
         <div className="container">
           <h2>My Skills</h2>
@@ -62,6 +133,7 @@ const Home = () => {
               <div key={skill.id} className="skill-card">
                 <h3>{skill.name}</h3>
                 <p className="skill-category">{skill.category_display}</p>
+                {/* Visual proficiency bar (proficiency * 20% for 1-5 scale) */}
                 <div className="skill-level">
                   <div 
                     className="skill-bar" 
@@ -80,7 +152,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Featured Projects Section */}
+      {/* Featured Projects Section - Highlight of best/featured work */}
       <section className="projects-section">
         <div className="container">
           <h2>Featured Projects</h2>
@@ -90,6 +162,7 @@ const Home = () => {
                 <div className="project-content">
                   <h3>{project.title}</h3>
                   <p>{project.description}</p>
+                  {/* Technology tags for each project */}
                   <div className="project-tech">
                     {project.technologies && project.technologies.map((tech, index) => (
                       <span key={index} className="tech-tag">
@@ -97,6 +170,7 @@ const Home = () => {
                       </span>
                     ))}
                   </div>
+                  {/* External project links */}
                   <div className="project-links">
                     {project.github_url && (
                       <a href={project.github_url} target="_blank" rel="noopener noreferrer">
@@ -121,7 +195,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Recent Blog Posts Section */}
+      {/* Recent Blog Posts Section - Preview of latest blog content */}
       <section className="blog-section">
         <div className="container">
           <h2>Recent Blog Posts</h2>
@@ -133,6 +207,7 @@ const Home = () => {
                     <Link to={`/blog/${post.slug}`}>{post.title}</Link>
                   </h3>
                   <p>{post.excerpt}</p>
+                  {/* Blog post metadata */}
                   <div className="blog-meta">
                     <span className="blog-date">
                       {new Date(post.published_at).toLocaleDateString()}

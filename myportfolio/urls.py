@@ -1,35 +1,8 @@
 """
-URL Configuration for MyPortfolio Project
+URL configuration for myportfolio project.
 
-This module defines the main URL routing configuration for the MyPortfolio project,
-organizing API endpoints, admin interface, documentation, and static file serving.
-The configuration supports a RESTful API structure with comprehensive documentation.
-
-URL Structure:
-- Root API endpoint with navigation information
-- Admin interface for content management
-- Modular API endpoints for each application
-- Interactive API documentation with Swagger UI
-- Development-only static and media file serving
-
-API Endpoints:
-- /api/portfolio/ - Portfolio projects and skills management
-- /api/blog/ - Blog posts, categories, and tags
-- /api/contact/ - Contact messages and newsletter subscriptions
-- /admin/ - Django admin interface
-- /api/docs/ - Interactive API documentation (Swagger UI)
-- /api/schema/ - OpenAPI schema endpoint
-
-Features:
-- RESTful API design with consistent URL patterns
-- Comprehensive API documentation with drf-spectacular
-- Modular URL configuration with app-specific routing
-- Development-friendly static file serving
-- Root endpoint with API navigation information
-
-For more information on Django URL configuration, see:
-https://docs.djangoproject.com/en/4.2/topics/http/urls/
-
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/4.2/topics/http/urls/
 Examples:
 Function views
     1. Add an import:  from my_app import views
@@ -49,36 +22,7 @@ from django.http import JsonResponse
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 def api_root(request):
-    """
-    Root API endpoint providing navigation and project information.
-    
-    This view serves as the main entry point for the Portfolio API, providing
-    a welcome message, version information, and a comprehensive list of
-    available endpoints for easy API discovery and navigation.
-    
-    Args:
-        request: The HTTP request object
-        
-    Returns:
-        JsonResponse: JSON response containing:
-            - message: Welcome message with project name
-            - version: Current API version
-            - endpoints: Dictionary of available API endpoints with descriptions
-            
-    Response Format:
-        {
-            "message": "Welcome to Mohamed Rabiaa Portfolio API",
-            "version": "1.0",
-            "endpoints": {
-                "portfolio": "/api/portfolio/",
-                "blog": "/api/blog/",
-                "contact": "/api/contact/",
-                "admin": "/admin/",
-                "api_docs": "/api/docs/",
-                "api_schema": "/api/schema/"
-            }
-        }
-    """
+    """Root API endpoint with available endpoints information"""
     return JsonResponse({
         'message': 'Welcome to Mohamed Rabiaa Portfolio API',
         'version': '1.0',

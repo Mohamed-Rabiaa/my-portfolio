@@ -1,11 +1,60 @@
+/**
+ * @fileoverview About page component for the Portfolio application.
+ * Displays personal information, skills categorization, experience timeline, and professional statistics.
+ * 
+ * @author Portfolio Application
+ * @version 1.0.0
+ */
+
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './About.css';
 
+/**
+ * About Component - Personal and professional information page.
+ * 
+ * This component provides:
+ * - Hero section with personal introduction
+ * - Professional journey narrative and statistics
+ * - Comprehensive skills display grouped by categories
+ * - Experience and education timeline
+ * - Visual skill proficiency indicators
+ * 
+ * @component
+ * @returns {JSX.Element} Complete about page with personal and professional information
+ * 
+ * @example
+ * // Used in App.jsx routing
+ * <Route path="/about" element={<About />} />
+ * 
+ * Features:
+ * - Fetches all skills from Django REST API
+ * - Groups skills by category for better organization
+ * - Dynamic skill proficiency visualization
+ * - Professional timeline with dates and descriptions
+ * - Statistics cards with achievements
+ */
 const About = () => {
+  /**
+   * State for storing all skills data from the API.
+   * Contains complete skills list with categories and proficiency levels.
+   * 
+   * @type {Array<Object>} Array of skill objects with name, category, proficiency
+   */
   const [skills, setSkills] = useState([]);
 
+  /**
+   * Effect hook to fetch skills data when component mounts.
+   * Retrieves all skills from the portfolio API endpoint.
+   */
   useEffect(() => {
+    /**
+     * Async function to fetch skills data from the API.
+     * 
+     * @async
+     * @function fetchSkills
+     * @throws {Error} Logs API errors to console
+     */
     const fetchSkills = async () => {
       try {
         const response = await axios.get('http://127.0.0.1:8000/api/portfolio/skills/');
@@ -18,6 +67,20 @@ const About = () => {
     fetchSkills();
   }, []);
 
+  /**
+   * Groups skills by category for organized display.
+   * Creates an object where keys are category names and values are arrays of skills.
+   * 
+   * @type {Object<string, Array<Object>>} Object with category names as keys and skill arrays as values
+   * 
+   * @example
+   * // Result structure:
+   * {
+   *   "Frontend": [skill1, skill2],
+   *   "Backend": [skill3, skill4],
+   *   "Database": [skill5]
+   * }
+   */
   const groupedSkills = skills.reduce((acc, skill) => {
     const category = skill.category_display;
     if (!acc[category]) {
@@ -29,7 +92,7 @@ const About = () => {
 
   return (
     <div className="about">
-      {/* About Hero Section */}
+      {/* About Hero Section - Personal introduction and overview */}
       <section className="about-hero">
         <div className="container">
           <div className="about-hero-content">
@@ -42,10 +105,11 @@ const About = () => {
         </div>
       </section>
 
-      {/* About Content Section */}
+      {/* About Content Section - Professional journey and statistics */}
       <section className="about-content">
         <div className="container">
           <div className="about-grid">
+            {/* Personal narrative and professional philosophy */}
             <div className="about-text">
               <h2>My Journey</h2>
               <p>
@@ -64,6 +128,7 @@ const About = () => {
                 projects, or exploring new frameworks and tools that can improve my development workflow.
               </p>
             </div>
+            {/* Professional achievement statistics */}
             <div className="about-stats">
               <div className="stat-card">
                 <h3>3+</h3>
@@ -86,21 +151,24 @@ const About = () => {
         </div>
       </section>
 
-      {/* Skills Section */}
+      {/* Skills Section - Comprehensive technical skills display */}
       <section className="skills-section">
         <div className="container">
           <h2>Technical Skills</h2>
           <div className="skills-categories">
+            {/* Render skills grouped by category */}
             {Object.entries(groupedSkills).map(([category, categorySkills]) => (
               <div key={category} className="skill-category">
                 <h3>{category}</h3>
                 <div className="skills-list">
+                  {/* Individual skill items with proficiency bars */}
                   {categorySkills.map((skill) => (
                     <div key={skill.id} className="skill-item">
                       <div className="skill-header">
                         <span className="skill-name">{skill.name}</span>
                         <span className="skill-level">{skill.proficiency_display}</span>
                       </div>
+                      {/* Visual proficiency indicator (proficiency * 20% for 1-5 scale) */}
                       <div className="skill-progress">
                         <div 
                           className="skill-progress-bar" 
@@ -116,11 +184,12 @@ const About = () => {
         </div>
       </section>
 
-      {/* Experience Section */}
+      {/* Experience Section - Professional and educational timeline */}
       <section className="experience-section">
         <div className="container">
           <h2>Experience & Education</h2>
           <div className="timeline">
+            {/* Current position */}
             <div className="timeline-item">
               <div className="timeline-date">2021 - Present</div>
               <div className="timeline-content">
@@ -132,6 +201,7 @@ const About = () => {
                 </p>
               </div>
             </div>
+            {/* Previous full-stack role */}
             <div className="timeline-item">
               <div className="timeline-date">2019 - 2021</div>
               <div className="timeline-content">
@@ -143,6 +213,7 @@ const About = () => {
                 </p>
               </div>
             </div>
+            {/* Junior developer role */}
             <div className="timeline-item">
               <div className="timeline-date">2017 - 2019</div>
               <div className="timeline-content">
@@ -154,6 +225,7 @@ const About = () => {
                 </p>
               </div>
             </div>
+            {/* Educational background */}
             <div className="timeline-item">
               <div className="timeline-date">2015 - 2019</div>
               <div className="timeline-content">
