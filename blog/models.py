@@ -27,6 +27,12 @@ class Category(models.Model):
         ordering = ['name']
 
     def save(self, *args, **kwargs):
+        """
+        Override save method to handle slug generation.
+        
+        Generates a slug from the name if no slug is provided.
+        For updates, only regenerates slug if it's empty to preserve custom slugs.
+        """
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
@@ -124,18 +130,22 @@ class BlogPost(models.Model):
         """
         Override save method to handle slug generation and publishing timestamps.
         
-        Automatically generates a URL-friendly slug from the title if not provided,
-        and sets the published_at timestamp when status changes to 'published'.
+        Generates a slug from the title if not provided, and sets the published_at 
+        timestamp when status changes to 'published'. For updates, preserves custom slugs.
         
         Args:
             *args: Variable length argument list
             **kwargs: Arbitrary keyword arguments
         """
+        # Only generate slug if it's empty to preserve custom slugs
         if not self.slug:
             self.slug = slugify(self.title)
+        
+        # Set published_at when status changes to published
         if self.status == 'published' and not self.published_at:
             from django.utils import timezone
             self.published_at = timezone.now()
+        
         super().save(*args, **kwargs)
 
     def __str__(self):

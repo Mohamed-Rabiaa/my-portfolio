@@ -16,22 +16,22 @@ from .models import BlogPost, Category, Tag, Comment
 
 class UserSerializer(serializers.ModelSerializer):
     """
-    Serializer for Django User model with basic profile information.
+    Serializer for User model in blog context.
     
     Provides essential user information for blog post authorship display
-    without exposing sensitive data like email addresses or permissions.
-    Used in nested serialization within blog post data.
+    including email for nested serialization within blog post data.
     
     Fields:
         - id: Unique user identifier
         - username: User's login name
         - first_name: User's first name
         - last_name: User's last name
+        - email: User's email address
     """
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name']
+        fields = ['id', 'username', 'first_name', 'last_name', 'email']
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -114,15 +114,21 @@ class CommentSerializer(serializers.ModelSerializer):
     
     Fields:
         - id: Unique comment identifier
+        - post_id: Blog post ID (write-only for creating comments)
         - name: Commenter's display name
         - email: Commenter's email (write-only for privacy)
         - content: Comment text content
         - created_at: Comment submission timestamp
     """
+    post_id = serializers.PrimaryKeyRelatedField(
+        queryset=BlogPost.objects.all(),
+        source='post',
+        write_only=True
+    )
     
     class Meta:
         model = Comment
-        fields = ['id', 'name', 'email', 'content', 'created_at']
+        fields = ['id', 'post_id', 'name', 'email', 'content', 'created_at']
         extra_kwargs = {
             'email': {'write_only': True}
         }
@@ -138,7 +144,7 @@ class BlogPostSerializer(serializers.ModelSerializer):
     for enhanced functionality.
     
     Features:
-        - Nested author information (read-only)
+        - Nested author information (read-only for output, validated for input)
         - Full category and tag details (read-only)
         - Associated approved comments (read-only)
         - Comment count calculation
@@ -148,8 +154,27 @@ class BlogPostSerializer(serializers.ModelSerializer):
     Fields include all BlogPost model fields plus calculated and nested data.
     """
     author = UserSerializer(read_only=True)
+    author_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), 
+        source='author', 
+        write_only=True,
+        required=False
+    )
     category = CategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        source='category',
+        write_only=True,
+        required=False
+    )
     tags = TagSerializer(many=True, read_only=True)
+    tag_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.all(),
+        source='tags',
+        many=True,
+        write_only=True,
+        required=False
+    )
     comments = CommentSerializer(many=True, read_only=True)
     comments_count = serializers.SerializerMethodField()
     status_display = serializers.CharField(source='get_status_display', read_only=True)
@@ -157,10 +182,10 @@ class BlogPostSerializer(serializers.ModelSerializer):
     class Meta:
         model = BlogPost
         fields = [
-            'id', 'title', 'slug', 'excerpt', 'content', 'author', 'category',
-            'tags', 'featured_image', 'status', 'status_display', 'featured',
-            'read_time', 'views', 'comments', 'comments_count', 'created_at',
-            'updated_at', 'published_at'
+            'id', 'title', 'slug', 'excerpt', 'content', 'author', 'author_id',
+            'category', 'category_id', 'tags', 'tag_ids', 'featured_image', 
+            'status', 'status_display', 'featured', 'read_time', 'views', 
+            'comments', 'comments_count', 'created_at', 'updated_at', 'published_at'
         ]
     
     def get_comments_count(self, obj):
