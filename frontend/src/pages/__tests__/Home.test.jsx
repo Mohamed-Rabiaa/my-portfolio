@@ -170,9 +170,9 @@ describe('Home Component', () => {
       renderHomeWithRouter()
       
       await waitFor(() => {
-        expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/portfolio/skills/')
-        expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/portfolio/projects/')
-        expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/blog/posts/')
+        expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/v1/portfolio/skills/')
+    expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/v1/portfolio/projects/')
+    expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/v1/blog/posts/')
       })
     })
 

@@ -9,6 +9,8 @@ This module provides REST API views for contact functionality including:
 - Email notification system for new messages
 """
 
+import logging
+import time
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -17,9 +19,17 @@ from django.core.mail import send_mail
 from django.conf import settings
 from .models import ContactMessage, Newsletter
 from .serializers import ContactMessageSerializer, NewsletterSerializer
+from common.versioning import VersionCompatibilityMixin, deprecated_api
+from common.monitoring import PerformanceMonitor, monitor_performance
+from common.validators import ValidationMixin
+from common.pagination import StandardResultsSetPagination
+
+# Initialize loggers
+logger = logging.getLogger('contact')
+performance_logger = logging.getLogger('performance')
 
 
-class ContactMessageCreateView(generics.CreateAPIView):
+class ContactMessageCreateView(ValidationMixin, VersionCompatibilityMixin, generics.CreateAPIView):
     """
     API view to create new contact form messages.
     
@@ -29,6 +39,7 @@ class ContactMessageCreateView(generics.CreateAPIView):
     - Error handling for email failures
     - IP address and user agent tracking
     - Graceful error responses
+    - Performance monitoring tracks message creation operations
     
     The view automatically captures request metadata (IP address, user agent)
     and sends email notifications to administrators when new messages are received.
@@ -65,22 +76,39 @@ class ContactMessageCreateView(generics.CreateAPIView):
         Returns:
             Response: Success message or validation errors
         """
-        serializer = self.get_serializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            contact_message = serializer.save()
+        with PerformanceMonitor('contact_message_creation'):
+            # Get client IP for logging
+            x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+            if x_forwarded_for:
+                ip = x_forwarded_for.split(',')[0]
+            else:
+                ip = request.META.get('REMOTE_ADDR')
             
-            # Send email notification (optional)
-            try:
-                self.send_notification_email(contact_message)
-            except Exception as e:
-                # Log the error but don't fail the request
-                print(f"Failed to send notification email: {e}")
+            logger.info(f"Contact message creation requested from {ip}")
+            logger.debug(f"Contact form data: name={request.data.get('name')}, email={request.data.get('email')}, subject={request.data.get('subject')}")
             
-            return Response(
-                {'message': 'Your message has been sent successfully!'},
-                status=status.HTTP_201_CREATED
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer = self.get_serializer(data=request.data, context={'request': request})
+            if serializer.is_valid():
+                contact_message = serializer.save()
+                
+                logger.info(f"Contact message created successfully: ID={contact_message.id}, from={contact_message.email}")
+                
+                # Send email notification (optional)
+                try:
+                    logger.debug("Attempting to send notification email")
+                    self.send_notification_email(contact_message)
+                    logger.info("Notification email sent successfully")
+                except Exception as e:
+                    # Log the error but don't fail the request
+                    logger.error(f"Failed to send notification email: {str(e)}", exc_info=True)
+                
+                return Response(
+                    {"message": "Contact message sent successfully!"},
+                    status=status.HTTP_201_CREATED
+                )
+            else:
+                logger.warning(f"Contact message validation failed from {ip}: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def send_notification_email(self, contact_message):
         """
@@ -123,7 +151,7 @@ class ContactMessageCreateView(generics.CreateAPIView):
         )
 
 
-class NewsletterSubscribeView(generics.CreateAPIView):
+class NewsletterSubscribeView(ValidationMixin, VersionCompatibilityMixin, generics.CreateAPIView):
     """
     API view to handle newsletter subscriptions.
     
@@ -132,6 +160,7 @@ class NewsletterSubscribeView(generics.CreateAPIView):
     - Reactivates inactive subscriptions for existing emails
     - Handles already active subscriptions gracefully
     - Captures subscriber metadata (IP address)
+    - Performance monitoring tracks subscription operations
     
     Features:
     - Duplicate email prevention with get_or_create pattern
@@ -168,43 +197,45 @@ class NewsletterSubscribeView(generics.CreateAPIView):
         Returns:
             Response: Subscription status and appropriate message
         """
-        serializer = self.get_serializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            # Check if email already exists
-            email = serializer.validated_data['email']
-            newsletter, created = Newsletter.objects.get_or_create(
-                email=email,
-                defaults=serializer.validated_data
-            )
-            
-            if created:
-                # Return serialized data for new subscription
-                response_serializer = self.get_serializer(newsletter)
-                return Response(
-                    response_serializer.data,
-                    status=status.HTTP_201_CREATED
+        with PerformanceMonitor('newsletter_subscription'):
+            serializer = self.get_serializer(data=request.data, context={'request': request})
+            if serializer.is_valid():
+                # Check if email already exists
+                email = serializer.validated_data['email']
+                newsletter, created = Newsletter.objects.get_or_create(
+                    email=email,
+                    defaults=serializer.validated_data
                 )
-            elif not newsletter.is_active:
-                # Reactivate subscription
-                newsletter.is_active = True
-                newsletter.save()
-                response_serializer = self.get_serializer(newsletter)
-                return Response(
-                    response_serializer.data,
-                    status=status.HTTP_200_OK
-                )
-            else:
-                # Already active subscription
-                response_serializer = self.get_serializer(newsletter)
-                return Response(
-                    response_serializer.data,
-                    status=status.HTTP_200_OK
-                )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+                if created:
+                    # Return serialized data for new subscription
+                    response_serializer = self.get_serializer(newsletter)
+                    return Response(
+                        response_serializer.data,
+                        status=status.HTTP_201_CREATED
+                    )
+                elif not newsletter.is_active:
+                    # Reactivate subscription
+                    newsletter.is_active = True
+                    newsletter.save()
+                    response_serializer = self.get_serializer(newsletter)
+                    return Response(
+                        response_serializer.data,
+                        status=status.HTTP_200_OK
+                    )
+                else:
+                    # Already active subscription
+                    response_serializer = self.get_serializer(newsletter)
+                    return Response(
+                        response_serializer.data,
+                        status=status.HTTP_200_OK
+                    )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@monitor_performance('contact.newsletter_unsubscribe')
 def newsletter_unsubscribe(request):
     """
     API endpoint to handle newsletter unsubscriptions.
@@ -215,6 +246,7 @@ def newsletter_unsubscribe(request):
     - Already unsubscribed users (graceful handling)
     - Non-existent email addresses
     - Invalid request data
+    - Performance monitoring tracks unsubscription operations
     
     This endpoint provides a user-friendly unsubscription process that doesn't
     reveal whether an email exists in the system for privacy reasons.
@@ -232,43 +264,32 @@ def newsletter_unsubscribe(request):
         email enumeration attacks, regardless of whether the email
         exists in the subscription list.
     """
-    """
-    API endpoint to unsubscribe from newsletter.
-    
-    Accepts POST requests with email data and deactivates the subscription
-    if it exists. Returns success message regardless of whether the email
-    was found to prevent email enumeration.
-    
-    Args:
-        request: HTTP request object containing email in POST data
+    with PerformanceMonitor('newsletter_unsubscribe'):
+        email = request.data.get('email')
+        if not email:
+            return Response(
+                {'error': 'Email is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
-    Returns:
-        Response: JSON response with success/error message
-    """
-    email = request.data.get('email')
-    if not email:
-        return Response(
-            {'error': 'Email is required'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    try:
-        newsletter = Newsletter.objects.get(email=email)
-        newsletter.is_active = False
-        newsletter.save()
-        return Response(
-            {'message': 'Successfully unsubscribed from newsletter.'},
-            status=status.HTTP_200_OK
-        )
-    except Newsletter.DoesNotExist:
-        return Response(
-            {'error': 'Email not found in newsletter subscriptions.'},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        try:
+            newsletter = Newsletter.objects.get(email=email)
+            newsletter.is_active = False
+            newsletter.save()
+            return Response(
+                {'message': 'Successfully unsubscribed from newsletter.'},
+                status=status.HTTP_200_OK
+            )
+        except Newsletter.DoesNotExist:
+            return Response(
+                {'error': 'Email not found in newsletter subscriptions.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+@monitor_performance('contact.contact_stats')
 def contact_stats(request):
     """
     API endpoint to retrieve contact form and newsletter statistics.
@@ -282,6 +303,7 @@ def contact_stats(request):
     - Newsletter subscription statistics
     - Message categorization by subject
     - Real-time data aggregation
+    - Performance monitoring tracks statistics retrieval operations
     
     Authentication:
         Requires authentication (typically admin/staff access)
@@ -297,46 +319,21 @@ def contact_stats(request):
             200 OK: Statistics retrieved successfully
             401 Unauthorized: Authentication required
     """
-    """
-    API endpoint to retrieve comprehensive contact statistics.
-    
-    Provides analytics and metrics about contact messages and newsletter
-    subscriptions including:
-    - Total message count across all categories
-    - New (unread) message count for notifications
-    - Active newsletter subscriber count
-    - Message breakdown by subject category
-    
-    This endpoint is useful for:
-    - Admin dashboard displays
-    - Analytics and reporting
-    - Notification badges (new message count)
-    - Business intelligence and insights
-    
-    Args:
-        request: HTTP GET request object
+    with PerformanceMonitor('contact_stats_query'):
+        stats = {
+            'total_messages': ContactMessage.objects.count(),
+            'new_messages': ContactMessage.objects.filter(status='new').count(),
+            'newsletter_subscribers': Newsletter.objects.filter(is_active=True).count(),
+            'total_subscriptions': Newsletter.objects.count(),
+            'active_subscriptions': Newsletter.objects.filter(is_active=True).count(),
+            'messages_by_subject': {}
+        }
         
-    Returns:
-        Response: JSON object containing contact statistics with keys:
-            - total_messages: Total number of contact messages
-            - new_messages: Number of unread messages
-            - newsletter_subscribers: Number of active subscribers
-            - messages_by_subject: Object with message counts per category
-    """
-    stats = {
-        'total_messages': ContactMessage.objects.count(),
-        'new_messages': ContactMessage.objects.filter(status='new').count(),
-        'newsletter_subscribers': Newsletter.objects.filter(is_active=True).count(),
-        'total_subscriptions': Newsletter.objects.count(),
-        'active_subscriptions': Newsletter.objects.filter(is_active=True).count(),
-        'messages_by_subject': {}
-    }
-    
-    # Get messages count by subject
-    subjects = ContactMessage.SUBJECT_CHOICES
-    for subject_key, subject_display in subjects:
-        stats['messages_by_subject'][subject_display] = ContactMessage.objects.filter(
-            subject=subject_key
-        ).count()
-    
-    return Response(stats)
+        # Get messages count by subject
+        subjects = ContactMessage.SUBJECT_CHOICES
+        for subject_key, subject_display in subjects:
+            stats['messages_by_subject'][subject_display] = ContactMessage.objects.filter(
+                subject=subject_key
+            ).count()
+        
+        return Response(stats)

@@ -58,7 +58,7 @@ const mockPosts = [
 const mockApiResponse = {
   results: mockPosts,
   count: 25, // Total posts
-  next: 'http://127.0.0.1:8000/api/blog/posts/?page=2',
+  next: 'http://127.0.0.1:8000/api/v1/blog/posts/?page=2',
   previous: null
 };
 
@@ -122,7 +122,7 @@ describe('Blog Component', () => {
         </BlogWrapper>
       );
       
-      expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/blog/posts/?page=1');
+      expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/v1/blog/posts/?page=1');
     });
 
     it('handles API errors gracefully', async () => {
@@ -366,7 +366,7 @@ describe('Blog Component', () => {
         data: {
           ...mockApiResponse,
           results: [mockPosts[0]], // Different posts for page 2
-          previous: 'http://127.0.0.1:8000/api/blog/posts/?page=1'
+          previous: 'http://127.0.0.1:8000/api/v1/blog/posts/?page=1'
         }
       });
       
@@ -375,7 +375,7 @@ describe('Blog Component', () => {
       await user.click(nextButton);
       
       // Should call API with page 2
-      expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/blog/posts/?page=2');
+      expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/v1/blog/posts/?page=2');
       
       // Should scroll to top
       expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
@@ -406,7 +406,7 @@ describe('Blog Component', () => {
       const page3Button = screen.getByText('3');
       await user.click(page3Button);
       
-      expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/blog/posts/?page=3');
+      expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/v1/blog/posts/?page=3');
     });
 
     it('does not render pagination for single page', async () => {

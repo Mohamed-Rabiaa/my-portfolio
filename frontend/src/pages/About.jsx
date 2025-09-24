@@ -57,7 +57,7 @@ const About = () => {
      */
     const fetchSkills = async () => {
       try {
-        const response = await axios.get('http://127.0.0.1:8000/api/portfolio/skills/');
+        const response = await axios.get('http://127.0.0.1:8000/api/v1/portfolio/skills/');
         setSkills(response.data.results);
       } catch (error) {
         console.error('Error fetching skills:', error);

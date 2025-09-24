@@ -85,7 +85,7 @@ describe('Portfolio Component', () => {
       
       render(<Portfolio />);
       
-      expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/portfolio/projects/');
+      expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/v1/portfolio/projects/');
     });
 
     it('handles API errors gracefully', async () => {

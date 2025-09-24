@@ -81,15 +81,15 @@ const Home = () => {
     const fetchData = async () => {
       try {
         // Fetch skills from portfolio API
-        const skillsResponse = await axios.get('http://127.0.0.1:8000/api/portfolio/skills/');
+        const skillsResponse = await axios.get('http://127.0.0.1:8000/api/v1/portfolio/skills/');
         setSkills(skillsResponse.data.results.slice(0, 6)); // Show first 6 skills
 
         // Fetch featured projects from portfolio API
-        const projectsResponse = await axios.get('http://127.0.0.1:8000/api/portfolio/projects/');
+        const projectsResponse = await axios.get('http://127.0.0.1:8000/api/v1/portfolio/projects/');
         setFeaturedProjects(projectsResponse.data.results.filter(project => project.featured).slice(0, 3));
 
         // Fetch recent blog posts from blog API
-        const postsResponse = await axios.get('http://127.0.0.1:8000/api/blog/posts/');
+        const postsResponse = await axios.get('http://127.0.0.1:8000/api/v1/blog/posts/');
         setRecentPosts(postsResponse.data.results.slice(0, 3));
       } catch (error) {
         console.error('Error fetching data:', error);

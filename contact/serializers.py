@@ -15,9 +15,15 @@ Version: 1.0.0
 
 from rest_framework import serializers
 from .models import ContactMessage, Newsletter
+from common.validators import (
+    ValidationMixin, validate_safe_html, validate_clean_text, 
+    validate_no_sql_injection, InputSanitizer
+)
+from common.utils import validate_email_address
+from django.core.validators import validate_email
 
 
-class ContactMessageSerializer(serializers.ModelSerializer):
+class ContactMessageSerializer(ValidationMixin, serializers.ModelSerializer):
     """
     Django REST Framework serializer for ContactMessage model.
     
@@ -52,65 +58,55 @@ class ContactMessageSerializer(serializers.ModelSerializer):
     
     def validate_email(self, value):
         """
-        Custom validation for email field.
-        
-        Ensures the email address is properly formatted and not from
-        blocked domains or disposable email services.
+        Custom validation for email field with enhanced security checks.
         
         Args:
             value (str): The email address to validate
             
         Returns:
             str: The validated email address
-            
-        Raises:
-            serializers.ValidationError: If email format is invalid or blocked
         """
-        if not value:
-            raise serializers.ValidationError("Email address is required.")
-        
-        # Convert to lowercase for consistency
-        value = value.lower().strip()
-        
-        # Basic email format validation (additional to DRF's built-in validation)
-        if '@' not in value or '.' not in value.split('@')[1]:
-            raise serializers.ValidationError("Please enter a valid email address.")
-        
-        # Check for blocked domains (example implementation)
-        blocked_domains = ['tempmail.com', 'guerrillamail.com', '10minutemail.com']
-        domain = value.split('@')[1]
-        if domain in blocked_domains:
-            raise serializers.ValidationError("Email from this domain is not allowed.")
-        
+        validate_email(value)
+        return value
+    
+    def validate_name(self, value):
+        """Validate and sanitize contact name."""
+        validate_clean_text(value)
+        return value
+    
+    def validate_phone(self, value):
+        """Validate and sanitize phone number."""
+        if value:
+            validate_clean_text(value)
+        return value
+    
+    def validate_company(self, value):
+        """Validate and sanitize company name."""
+        if value:
+            validate_clean_text(value)
+        return value
+    
+    def validate_subject(self, value):
+        """Validate and sanitize message subject."""
+        validate_clean_text(value)
         return value
     
     def validate_message(self, value):
         """
-        Custom validation for message content.
-        
-        Ensures the message meets minimum length requirements and
-        doesn't contain spam-like content.
+        Custom validation for message content with enhanced sanitization.
         
         Args:
             value (str): The message content to validate
             
         Returns:
             str: The validated message content
-            
-        Raises:
-            serializers.ValidationError: If message is too short or contains spam
         """
         if not value or len(value.strip()) < 10:
             raise serializers.ValidationError("Message must be at least 10 characters long.")
         
-        # Check for spam-like content (basic implementation)
-        spam_keywords = ['viagra', 'casino', 'lottery', 'winner']
-        message_lower = value.lower()
-        for keyword in spam_keywords:
-            if keyword in message_lower:
-                raise serializers.ValidationError("Message contains inappropriate content.")
-        
-        return value.strip()
+        # Use safe HTML validation to allow basic formatting but prevent XSS
+        validate_safe_html(value)
+        return value
     
     def create(self, validated_data):
         """
@@ -141,7 +137,7 @@ class ContactMessageSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class NewsletterSerializer(serializers.ModelSerializer):
+class NewsletterSerializer(ValidationMixin, serializers.ModelSerializer):
     """
     Django REST Framework serializer for Newsletter model.
     
@@ -178,28 +174,25 @@ class NewsletterSerializer(serializers.ModelSerializer):
         """
         Custom validation for email field in newsletter subscriptions.
         
-        Ensures the email address is valid and checks for existing
-        active subscriptions to prevent duplicates.
-        
         Args:
             value (str): The email address to validate
             
         Returns:
             str: The validated email address
-            
-        Raises:
-            serializers.ValidationError: If email is invalid or already subscribed
         """
-        if not value:
-            raise serializers.ValidationError("Email address is required.")
-        
-        # Convert to lowercase for consistency
-        value = value.lower().strip()
+        # Use enhanced email validation
+        value = self.validate_email_field(value)
         
         # Check if email is already subscribed and active
         if Newsletter.objects.filter(email=value, is_active=True).exists():
             raise serializers.ValidationError("This email is already subscribed to our newsletter.")
         
+        return value
+    
+    def validate_name(self, value):
+        """Validate and sanitize newsletter subscriber name."""
+        if value:
+            return validate_clean_text(value, max_length=100)
         return value
     
     def validate(self, data):

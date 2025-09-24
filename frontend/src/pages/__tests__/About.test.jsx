@@ -75,7 +75,7 @@ describe('About Component', () => {
       })
       
       await waitFor(() => {
-        expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/skills/')
+        expect(mockedAxios.get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/v1/portfolio/skills/')
       })
     })
 

@@ -69,8 +69,12 @@ Order matters - middleware is processed top-to-bottom for requests
 and bottom-to-top for responses.
 """
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",      # Security enhancements
     "corsheaders.middleware.CorsMiddleware",              # CORS handling (must be early)
+    "common.middleware.SecurityHeadersMiddleware",
+    "common.middleware.RequestLoggingMiddleware",
+    "common.middleware.APIVersionMiddleware",
+    "common.error_handlers.ErrorMonitoringMiddleware",
+    "django.middleware.security.SecurityMiddleware",      # Security enhancements
     "django.contrib.sessions.middleware.SessionMiddleware", # Session management
     "django.middleware.common.CommonMiddleware",          # Common functionality
     "django.middleware.csrf.CsrfViewMiddleware",          # CSRF protection
@@ -180,6 +184,124 @@ USE_I18N = True   # Enable internationalization
 USE_TZ = True     # Enable timezone support
 
 
+# Logging Configuration
+# https://docs.djangoproject.com/en/4.2/topics/logging/
+
+"""
+Comprehensive logging configuration:
+- Console logging for development
+- File logging for production
+- Structured logging with different levels
+- Separate loggers for different components
+"""
+import os
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+        'json': {
+            'format': '{{\"level\": \"{levelname}\", \"time\": \"{asctime}\", \"module\": \"{module}\", \"message\": \"{message}\"}}',
+            'style': '{',
+        },
+    },
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'portfolio.log',
+            'maxBytes': 1024*1024*15,  # 15MB
+            'backupCount': 10,
+            'formatter': 'verbose',
+        },
+        'error_file': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'portfolio_errors.log',
+            'maxBytes': 1024*1024*15,  # 15MB
+            'backupCount': 10,
+            'formatter': 'verbose',
+        },
+        'performance_file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'performance.log',
+            'maxBytes': 1024*1024*15,  # 15MB
+            'backupCount': 5,
+            'formatter': 'json',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'portfolio': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        'blog': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        'contact': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        'performance': {
+            'handlers': ['performance_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'api.versioning': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'WARNING',
+            'propagate': False,
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'INFO',
+    },
+}
+
+# Create logs directory if it doesn't exist
+LOGS_DIR = BASE_DIR / 'logs'
+if not LOGS_DIR.exists():
+    LOGS_DIR.mkdir(exist_ok=True)
+
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
@@ -203,7 +325,11 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',  # API schema generation
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 20  # Default page size for paginated responses
+    'PAGE_SIZE': 20,  # Default page size for paginated responses
+    'EXCEPTION_HANDLER': 'common.error_handlers.custom_exception_handler',  # Custom error handling
+    'DEFAULT_VERSIONING_CLASS': 'common.versioning.APIVersioning',  # API versioning
+    'DEFAULT_VERSION': 'v1',  # Default API version
+    'ALLOWED_VERSIONS': ['v1', 'v2'],  # Supported API versions
 }
 
 """
@@ -232,6 +358,16 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True  # Allow cookies and auth headers in CORS requests
+
+# API Versioning Configuration
+DEFAULT_API_VERSION = 'v1'
+ALLOWED_API_VERSIONS = ['v1', 'v2']
+DEPRECATED_API_VERSIONS = {
+    # Example: 'v0': {
+    #     'sunset_date': '2024-12-31',
+    #     'replacement_version': 'v1'
+    # }
+}
 
 """
 API Documentation Configuration:

@@ -9,118 +9,161 @@ This module provides REST API views for the blog functionality including:
 - Featured and popular post endpoints
 """
 
+import logging
+import time
 from rest_framework import generics, filters, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import F
+from django.shortcuts import get_object_or_404
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
+from django.http import Http404
+
 from .models import BlogPost, Category, Tag, Comment
 from .serializers import (
     BlogPostSerializer, BlogPostListSerializer, CategorySerializer,
     TagSerializer, CommentSerializer
 )
+from .services import BlogPostService, CategoryService, TagService, CommentService
+from common.pagination import BlogPagination, StandardResultsSetPagination, BaseFilteredViewMixin
+from common.exceptions import BlogPostNotFound, BlogPostNotPublished, NotFoundError
+from common.cache import BlogCache, CacheManager, cache_result
+from common.versioning import VersionCompatibilityMixin, deprecated_api
+from common.monitoring import monitor_performance, PerformanceMonitor
 
-class CustomPageNumberPagination(PageNumberPagination):
-    """Custom pagination class that allows dynamic page size."""
-    page_size_query_param = 'page_size'
-    max_page_size = 100
+# Initialize loggers
+logger = logging.getLogger('blog')
+performance_logger = logging.getLogger('performance')
 
-class BlogPostListView(generics.ListAPIView):
+@method_decorator(cache_page(60 * 30), name='dispatch')  # Cache for 30 minutes
+class BlogPostListView(BaseFilteredViewMixin, VersionCompatibilityMixin, generics.ListAPIView):
     """
-    API view to list all published blog posts with advanced filtering capabilities.
+    API view to list published blog posts with pagination, filtering, and search.
     
-    Provides comprehensive blog post listing with support for:
-    - Filtering by category, tags, featured status, and author
-    - Full-text search across title, excerpt, content, and tag names
-    - Ordering by publication date, view count, or title
-    - Pagination for large result sets
-    
-    Only returns posts with 'published' status to ensure content quality.
+    Supports filtering by category, tag, date range filtering, and search functionality.
+    Results are cached for 30 minutes to improve performance.
+    Performance monitoring tracks query execution times and metrics.
     """
-    queryset = BlogPost.objects.filter(status='published')
-    serializer_class = BlogPostListSerializer
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['category__slug', 'tags__slug', 'featured', 'author']
-    search_fields = ['title', 'excerpt', 'content', 'tags__name']
-    ordering_fields = ['published_at', 'views', 'title']
-    ordering = ['-published_at']
-    pagination_class = CustomPageNumberPagination
+    serializer_class = BlogPostSerializer
+    pagination_class = BlogPagination
+    search_fields = ['title', 'content', 'excerpt']
+    ordering_fields = ['created_at', 'updated_at', 'views']
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        """Get published blog posts with performance monitoring."""
+        with PerformanceMonitor('blog_posts_query'):
+            logger.info("Fetching published blog posts list")
+            
+            # Get query parameters for logging
+            category = self.request.query_params.get('category__slug')
+            tags = self.request.query_params.get('tags__slug')
+            search = self.request.query_params.get('search')
+            
+            if category:
+                logger.debug(f"Filtering by category: {category}")
+            if tags:
+                logger.debug(f"Filtering by tags: {tags}")
+            if search:
+                logger.debug(f"Search query: {search}")
+            
+            return BlogPostService.get_published_posts()
+
+    def list(self, request, *args, **kwargs):
+        """Override list method with performance monitoring."""
+        with PerformanceMonitor('blog_list_response'):
+            logger.info(f"Blog posts list requested by {request.user}")
+            return super().list(request, *args, **kwargs)
 
 
-class BlogPostDetailView(generics.RetrieveAPIView):
+class BlogPostDetailView(VersionCompatibilityMixin, generics.RetrieveAPIView):
     """
-    API view to retrieve a single blog post by its slug with view tracking.
+    API view to retrieve a single blog post by slug.
     
-    Features:
-    - Fetches blog post using SEO-friendly slug instead of ID
-    - Automatically increments view count for analytics
-    - Returns full post content including related data
-    - Only serves published posts to maintain content control
-    
-    The view count is atomically incremented to prevent race conditions
-    in high-traffic scenarios.
+    Increments view count and uses caching for better performance.
+    Only returns published posts to public users.
+    Performance monitoring tracks retrieval and caching operations.
     """
-    queryset = BlogPost.objects.filter(status='published')
     serializer_class = BlogPostSerializer
     lookup_field = 'slug'
 
-    def retrieve(self, request, *args, **kwargs):
-        """
-        Override retrieve method to increment view count.
-        
-        Args:
-            request: HTTP request object
-            *args: Variable length argument list
-            **kwargs: Arbitrary keyword arguments
+    def get_object(self):
+        with PerformanceMonitor('blog_post_detail_query'):
+            slug = self.kwargs.get('slug')
             
-        Returns:
-            Response: Serialized blog post data with updated view count
-        """
-        instance = self.get_object()
-        # Increment view count atomically to prevent race conditions
-        BlogPost.objects.filter(pk=instance.pk).update(views=F('views') + 1)
-        # Refresh instance to get updated view count
-        instance.refresh_from_db()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+            # Try to get from cache first
+            cache_key = BlogCache.get_post_key(slug)
+            cached_post = CacheManager.get(cache_key)
+            
+            if cached_post:
+                # Still increment view count for cached posts
+                BlogPostService.increment_view_count(cached_post)
+                return cached_post
+            
+            try:
+                post = BlogPostService.get_post_by_slug(slug)
+                BlogPostService.increment_view_count(post)
+                
+                # Cache the post for future requests
+                CacheManager.set(cache_key, post, cache_type='blog_post')
+                
+                return post
+            except BlogPostNotFound:
+                raise Http404("Blog post not found")
+            except BlogPostNotPublished:
+                raise Http404("Blog post not available")
 
 
+@method_decorator(cache_page(60 * 60), name='dispatch')  # Cache for 1 hour
 class FeaturedBlogPostsView(generics.ListAPIView):
     """
-    API view to list only featured blog posts.
+    API view to list featured blog posts for homepage or special sections.
     
-    Returns a curated list of blog posts marked as 'featured' by administrators.
-    Useful for highlighting important or popular content on the homepage
-    or in special sections. Posts are ordered by publication date (newest first).
+    Returns only published posts marked as featured, ordered by publication date.
+    Results are cached for 1 hour since featured posts change infrequently.
+    Performance monitoring tracks featured content queries.
     """
-    queryset = BlogPost.objects.filter(status='published', featured=True)
     serializer_class = BlogPostListSerializer
     ordering = ['-published_at']
 
+    def get_queryset(self):
+        """Get featured posts using service layer with performance monitoring."""
+        with PerformanceMonitor('featured_posts_query'):
+            return BlogPostService.get_featured_posts()
 
+
+@method_decorator(cache_page(60 * 120), name='dispatch')  # Cache for 2 hours
 class CategoryListView(generics.ListAPIView):
     """
-    API view to list all available blog categories.
+    API view to list all blog categories with post counts.
     
-    Provides a complete list of blog categories for navigation menus,
-    filtering interfaces, and content organization. Categories help
-    users discover related content and improve site navigation.
+    Returns categories using the service layer with post counts and metadata.
+    Results are cached for 2 hours since categories change infrequently.
+    Performance monitoring tracks category retrieval operations.
     """
-    queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
+    def get_queryset(self):
+        with PerformanceMonitor('categories_query'):
+            return CategoryService.get_all_categories()
 
+
+@method_decorator(cache_page(60 * 120), name='dispatch')  # Cache for 2 hours
 class TagListView(generics.ListAPIView):
     """
-    API view to list all available blog tags.
+    API view to list popular tags with usage counts and popularity metrics.
     
-    Returns all tags used across blog posts, enabling tag-based filtering
-    and content discovery. Tags provide more granular content labeling
-    compared to categories and support multiple assignments per post.
+    Returns tags using the service layer, ordered by popularity.
+    Results are cached for 2 hours since tag popularity changes slowly.
+    Performance monitoring tracks tag retrieval operations.
     """
-    queryset = Tag.objects.all()
     serializer_class = TagSerializer
+
+    def get_queryset(self):
+        with PerformanceMonitor('tags_query'):
+            return TagService.get_popular_tags()
 
 
 class CommentCreateView(generics.CreateAPIView):
@@ -134,8 +177,8 @@ class CommentCreateView(generics.CreateAPIView):
     
     The view automatically associates comments with the correct blog post
     using the post slug from the URL parameters.
+    Performance monitoring tracks comment creation operations.
     """
-    queryset = Comment.objects.all()
     serializer_class = CommentSerializer
 
     def perform_create(self, serializer):
@@ -148,89 +191,69 @@ class CommentCreateView(generics.CreateAPIView):
         Raises:
             Http404: If the specified blog post doesn't exist or isn't published
         """
-        post_slug = self.kwargs.get('post_slug')
-        try:
-            post = BlogPost.objects.get(slug=post_slug, status='published')
-            serializer.save(post=post)
-        except BlogPost.DoesNotExist:
-            return Response(
-                {'error': 'Blog post not found'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
+        with PerformanceMonitor('comment_creation'):
+            post_slug = self.kwargs.get('post_slug')
+            try:
+                post = BlogPostService.get_post_by_slug(post_slug, published_only=True)
+                CommentService.create_comment(
+                    post=post,
+                    name=serializer.validated_data['name'],
+                    email=serializer.validated_data['email'],
+                    content=serializer.validated_data['content']
+                )
+            except (BlogPostNotFound, BlogPostNotPublished):
+                return Response(
+                    {'error': 'Blog post not found'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
 
+@cache_result(timeout=900, cache_type='stats')  # Cache for 15 minutes
+@monitor_performance('blog.blog_stats')
 @api_view(['GET'])
 def blog_stats(request):
     """
-    API endpoint to retrieve comprehensive blog statistics.
+    API endpoint to get blog statistics.
     
-    Provides key metrics about the blog content including:
-    - Total number of published blog posts
-    - Total number of categories in use
-    - Total number of tags available
-    - Total number of approved comments
-    
-    This endpoint is useful for dashboard displays, analytics widgets,
-    and providing overview information to administrators or visitors.
-    
-    Args:
-        request: HTTP GET request object
-        
-    Returns:
-        Response: JSON object containing blog statistics with keys:
-            - total_posts: Number of published blog posts
-            - total_categories: Number of categories
-            - total_tags: Number of tags
-            - total_comments: Number of approved comments
+    Returns comprehensive blog statistics including post counts,
+    category distribution, and engagement metrics.
+    Results are cached for 15 minutes for better performance.
+    Performance monitoring tracks statistics generation.
     """
-    stats = {
-        'total_posts': BlogPost.objects.count(),
-        'published_posts': BlogPost.objects.filter(status='published').count(),
-        'total_categories': Category.objects.count(),
-        'total_tags': Tag.objects.count(),
-        'total_comments': Comment.objects.filter(approved=True).count(),
-    }
-    return Response(stats)
+    with PerformanceMonitor('blog_stats_query'):
+        stats = BlogPostService.get_blog_stats()
+        return Response(stats)
 
 
+@cache_result(timeout=600, cache_type='recent')  # Cache for 10 minutes
+@monitor_performance('blog.recent_posts')
 @api_view(['GET'])
 def recent_posts(request):
     """
-    API endpoint to retrieve the most recently published blog posts.
+    API endpoint to get recent blog posts.
     
-    Returns the 5 most recent published blog posts, ordered by publication date.
-    This endpoint is commonly used for "Recent Posts" widgets, sidebar content,
-    or homepage highlights to showcase fresh content.
-    
-    Args:
-        request: HTTP GET request object
-        
-    Returns:
-        Response: JSON array of the 5 most recent published blog posts,
-                 serialized with BlogPostListSerializer for consistent formatting
+    Returns the 5 most recently published blog posts.
+    Results are cached for 10 minutes for better performance.
+    Performance monitoring tracks recent posts retrieval.
     """
-    posts = BlogPost.objects.filter(status='published').order_by('-published_at')[:5]
-    serializer = BlogPostListSerializer(posts, many=True)
-    return Response(serializer.data)
+    with PerformanceMonitor('recent_posts_query'):
+        posts = BlogPostService.get_recent_posts(limit=5)
+        serializer = BlogPostSerializer(posts, many=True)
+        return Response(serializer.data)
 
 
+@cache_result(timeout=1800, cache_type='popular')  # Cache for 30 minutes
+@monitor_performance('blog.popular_posts')
 @api_view(['GET'])
 def popular_posts(request):
     """
-    API endpoint to retrieve the most popular blog posts based on view count.
+    API endpoint to get popular blog posts.
     
-    Returns the top 5 blog posts with the highest view counts, providing
-    insights into reader preferences and trending content. This data is
-    valuable for content recommendations and understanding audience interests.
-    
-    Args:
-        request: HTTP GET request object
-        
-    Returns:
-        Response: JSON array of the 5 most viewed published blog posts,
-                 ordered by view count (highest first), serialized with
-                 BlogPostListSerializer for consistent formatting
+    Returns the 5 most popular blog posts based on view count.
+    Results are cached for 30 minutes since popularity changes slowly.
+    Performance monitoring tracks popular posts retrieval.
     """
-    posts = BlogPost.objects.filter(status='published').order_by('-views')[:5]
-    serializer = BlogPostListSerializer(posts, many=True)
-    return Response(serializer.data)
+    with PerformanceMonitor('popular_posts_query'):
+        posts = BlogPostService.get_popular_posts(limit=5)
+        serializer = BlogPostSerializer(posts, many=True)
+        return Response(serializer.data)

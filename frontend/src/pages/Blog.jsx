@@ -44,7 +44,7 @@ const Blog = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/blog/posts/?page=${currentPage}`);
+        const response = await axios.get(`http://127.0.0.1:8000/api/v1/blog/posts/?page=${currentPage}`);
         setPosts(response.data.results);
         setTotalPages(Math.ceil(response.data.count / 10)); // Assuming 10 posts per page
         setLoading(false);

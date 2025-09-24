@@ -12,6 +12,10 @@ JSON format for the blog API endpoints. Includes serializers for:
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import BlogPost, Category, Tag, Comment
+from common.validators import (
+    ValidationMixin, validate_safe_html, validate_clean_text, 
+    validate_no_sql_injection, InputSanitizer
+)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -103,7 +107,7 @@ class TagSerializer(serializers.ModelSerializer):
         return obj.posts.filter(status='published').count()
 
 
-class CommentSerializer(serializers.ModelSerializer):
+class CommentSerializer(ValidationMixin, serializers.ModelSerializer):
     """
     Serializer for blog Comment model with privacy protection.
     
@@ -132,9 +136,22 @@ class CommentSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'email': {'write_only': True}
         }
+    
+    def validate_name(self, value):
+        """Validate and sanitize commenter name."""
+        return validate_clean_text(value, max_length=100)
+    
+    def validate_email(self, value):
+        """Validate commenter email address."""
+        return self.validate_email_field(value)
+    
+    def validate_content(self, value):
+        """Validate and sanitize comment content."""
+        # Allow basic HTML but sanitize dangerous content
+        return validate_safe_html(value, max_length=2000)
 
 
-class BlogPostSerializer(serializers.ModelSerializer):
+class BlogPostSerializer(ValidationMixin, serializers.ModelSerializer):
     """
     Comprehensive serializer for detailed BlogPost model representation.
     
@@ -199,6 +216,21 @@ class BlogPostSerializer(serializers.ModelSerializer):
             int: Count of approved comments on this post
         """
         return obj.comments.filter(approved=True).count()
+    
+    def validate_title(self, value):
+        """Validate and sanitize blog post title."""
+        return validate_clean_text(value, max_length=200)
+    
+    def validate_excerpt(self, value):
+        """Validate and sanitize blog post excerpt."""
+        if value:
+            return validate_clean_text(value, max_length=500)
+        return value
+    
+    def validate_content(self, value):
+        """Validate and sanitize blog post content."""
+        # Allow rich HTML content but sanitize dangerous elements
+        return validate_safe_html(value, max_length=50000)
 
 
 class BlogPostListSerializer(serializers.ModelSerializer):

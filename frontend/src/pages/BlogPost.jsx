@@ -12,7 +12,7 @@ const BlogPost = () => {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const response = await axios.get(`http://127.0.0.1:8000/api/blog/posts/${slug}/`);
+        const response = await axios.get(`http://127.0.0.1:8000/api/v1/blog/posts/${slug}/`);
         setPost(response.data);
         setLoading(false);
       } catch (error) {

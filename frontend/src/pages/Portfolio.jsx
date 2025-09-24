@@ -85,7 +85,7 @@ const Portfolio = () => {
      */
     const fetchProjects = async () => {
       try {
-        const response = await axios.get('http://127.0.0.1:8000/api/portfolio/projects/');
+        const response = await axios.get('http://127.0.0.1:8000/api/v1/portfolio/projects/');
         setProjects(response.data.results);
         setFilteredProjects(response.data.results);
         setLoading(false);

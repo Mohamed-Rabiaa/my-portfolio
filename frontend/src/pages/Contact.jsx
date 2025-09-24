@@ -25,7 +25,7 @@ const Contact = () => {
     setSubmitStatus(null);
 
     try {
-      await axios.post('http://127.0.0.1:8000/api/contact/messages/', formData);
+      await axios.post('http://127.0.0.1:8000/api/v1/contact/messages/', formData);
       setSubmitStatus('success');
       setFormData({
         name: '',

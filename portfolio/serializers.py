@@ -10,6 +10,10 @@ This module provides serializers for the portfolio functionality including:
 
 from rest_framework import serializers
 from .models import Project, Skill, ProjectImage
+from common.validators import (
+    ValidationMixin, validate_safe_html, validate_clean_text, 
+    validate_no_sql_injection, InputSanitizer
+)
 
 
 class SkillSerializer(serializers.ModelSerializer):
@@ -67,7 +71,7 @@ class ProjectImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'image', 'caption', 'order']
 
 
-class ProjectSerializer(serializers.ModelSerializer):
+class ProjectSerializer(ValidationMixin, serializers.ModelSerializer):
     """
     Comprehensive serializer for the Project model with full details.
     
@@ -110,6 +114,32 @@ class ProjectSerializer(serializers.ModelSerializer):
             'technologies', 'github_url', 'live_url', 'image', 'featured',
             'additional_images', 'created_at', 'updated_at'
         ]
+    
+    def validate_title(self, value):
+        """Validate and sanitize project title."""
+        return validate_clean_text(value, max_length=200)
+    
+    def validate_description(self, value):
+        """Validate and sanitize project description."""
+        return validate_clean_text(value, max_length=500)
+    
+    def validate_detailed_description(self, value):
+        """Validate and sanitize detailed project description."""
+        if value:
+            return validate_safe_html(value, max_length=5000)
+        return value
+    
+    def validate_github_url(self, value):
+        """Validate GitHub URL."""
+        if value:
+            return self.validate_url_field(value)
+        return value
+    
+    def validate_live_url(self, value):
+        """Validate live project URL."""
+        if value:
+            return self.validate_url_field(value)
+        return value
 
 
 class ProjectListSerializer(serializers.ModelSerializer):
