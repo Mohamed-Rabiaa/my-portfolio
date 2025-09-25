@@ -60,6 +60,14 @@ const Home = () => {
   const [recentPosts, setRecentPosts] = useState([]);
 
   /**
+   * State for storing admin profile data from the API.
+   * Contains profile photo URL and admin information.
+   * 
+   * @type {Object} Admin profile object with photo URL and bio
+   */
+  const [adminProfile, setAdminProfile] = useState(null);
+
+  /**
    * Effect hook to fetch all required data when component mounts.
    * Makes parallel API calls to portfolio and blog endpoints.
    * Handles errors gracefully with console logging.
@@ -79,6 +87,10 @@ const Home = () => {
      */
     const fetchData = async () => {
       try {
+        // Fetch admin profile for profile photo
+        const profileResponse = await axios.get('http://127.0.0.1:8000/api/v1/portfolio/admin-profile/');
+        setAdminProfile(profileResponse.data);
+
         // Fetch skills from portfolio API
         const skillsResponse = await axios.get('http://127.0.0.1:8000/api/v1/portfolio/skills/');
         setSkills(skillsResponse.data.results.slice(0, 6)); // Show first 6 skills
@@ -104,20 +116,36 @@ const Home = () => {
       <section className="hero">
         <div className="hero-container">
           <div className="hero-content">
-            <h1>Hi, I'm a Full-Stack Developer</h1>
-            <p>
-              I create amazing web experiences using modern technologies like Django, React, and more.
-              Welcome to my portfolio where you can explore my projects and read my thoughts on development.
-            </p>
-            <div className="hero-buttons">
-              {/* Primary CTA to portfolio */}
-              <Link to="/portfolio" className="btn btn-primary">
-                View My Work
-              </Link>
-              {/* Secondary CTA to contact */}
-              <Link to="/contact" className="btn btn-secondary">
-                Get In Touch
-              </Link>
+            <div className="hero-image">
+              {adminProfile?.profile_photo_url ? (
+                <img 
+                  src={adminProfile.profile_photo_url} 
+                  alt="Profile" 
+                  className="profile-image" 
+                />
+              ) : (
+                <div className="profile-placeholder">
+                  <span>No Photo</span>
+                </div>
+              )}
+            </div>
+            <div className="hero-text">
+              <h1>Hi, I'm {adminProfile?.full_name || 'a Full-Stack Developer'}</h1>
+              <p>
+                {adminProfile?.bio || 
+                  "I create amazing web experiences using modern technologies like Django, React, and more. Welcome to my portfolio where you can explore my projects and read my thoughts on development."
+                }
+              </p>
+              <div className="hero-buttons">
+                {/* Primary CTA to portfolio */}
+                <Link to="/portfolio" className="btn btn-primary">
+                  View My Work
+                </Link>
+                {/* Secondary CTA to contact */}
+                <Link to="/contact" className="btn btn-secondary">
+                  Get In Touch
+                </Link>
+              </div>
             </div>
           </div>
         </div>
