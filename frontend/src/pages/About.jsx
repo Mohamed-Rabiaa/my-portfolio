@@ -49,7 +49,7 @@ const About = () => {
    */
   useEffect(() => {
     /**
-     * Async function to fetch skills data from the API.
+     * Async function to fetch all skills data from the API with pagination handling.
      * 
      * @async
      * @function fetchSkills
@@ -57,8 +57,17 @@ const About = () => {
      */
     const fetchSkills = async () => {
       try {
-        const response = await axios.get('http://127.0.0.1:8000/api/v1/portfolio/skills/');
-        setSkills(response.data.results);
+        let allSkills = [];
+        let nextUrl = 'http://127.0.0.1:8000/api/v1/portfolio/skills/?page_size=100';
+        
+        // Fetch all pages of skills
+        while (nextUrl) {
+          const response = await axios.get(nextUrl);
+          allSkills = [...allSkills, ...response.data.results];
+          nextUrl = response.data.next;
+        }
+        
+        setSkills(allSkills);
       } catch (error) {
         console.error('Error fetching skills:', error);
       }
