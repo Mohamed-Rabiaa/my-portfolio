@@ -40,6 +40,28 @@ class UserProfile(models.Model):
         blank=True,
         help_text="Brief biography or description"
     )
+    phone = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="Contact phone number"
+    )
+    location = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Current location (city, country)"
+    )
+    linkedin_url = models.URLField(
+        blank=True,
+        help_text="LinkedIn profile URL"
+    )
+    github_url = models.URLField(
+        blank=True,
+        help_text="GitHub profile URL"
+    )
+    twitter_url = models.URLField(
+        blank=True,
+        help_text="Twitter profile URL"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

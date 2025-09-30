@@ -130,7 +130,7 @@ const Home = () => {
               )}
             </div>
             <div className="hero-text">
-              <h1>Hi, I'm {adminProfile?.full_name || 'a Full-Stack Developer'}</h1>
+              <h1>Hi, I'm {adminProfile ? `${adminProfile.first_name} ${adminProfile.last_name}` : 'a Full-Stack Developer'}</h1>
               <p>
                 {adminProfile?.bio || 
                   "I create amazing web experiences using modern technologies like Django, React, and more. Welcome to my portfolio where you can explore my projects and read my thoughts on development."

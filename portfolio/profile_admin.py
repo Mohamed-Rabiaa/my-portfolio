@@ -21,7 +21,7 @@ class UserProfileInline(admin.StackedInline):
     model = UserProfile
     can_delete = False
     verbose_name_plural = 'Profile'
-    fields = ('profile_photo', 'bio')
+    fields = ('profile_photo', 'bio', 'phone', 'location', 'linkedin_url', 'github_url', 'twitter_url')
 
 
 class UserAdmin(BaseUserAdmin):
@@ -67,7 +67,7 @@ class UserProfileAdmin(admin.ModelAdmin):
             'fields': ('user',)
         }),
         ('Profile Details', {
-            'fields': ('profile_photo', 'bio')
+            'fields': ('profile_photo', 'bio', 'phone', 'location', 'linkedin_url', 'github_url', 'twitter_url')
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),

@@ -53,17 +53,27 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class AdminProfileSerializer(serializers.ModelSerializer):
     """
-    Simplified serializer for admin profile information.
+    Serializer for admin profile information.
     
-    This serializer is specifically designed to return the admin's
-    profile information for display on the frontend.
+    Provides a simplified view of the admin's profile for frontend display.
     """
+    first_name = serializers.CharField(source='user.first_name', read_only=True)
+    last_name = serializers.CharField(source='user.last_name', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
     full_name = serializers.SerializerMethodField()
     profile_photo_url = serializers.SerializerMethodField()
     
     class Meta:
         model = UserProfile
         fields = [
+            'first_name',
+            'last_name',
+            'email',
+            'phone',
+            'location',
+            'linkedin_url',
+            'github_url',
+            'twitter_url',
             'full_name',
             'profile_photo_url',
             'bio'
