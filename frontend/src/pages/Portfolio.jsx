@@ -99,33 +99,39 @@ const Portfolio = () => {
   }, []);
 
   /**
-   * Dynamically generated array of unique project categories.
-   * Includes 'all' option plus all unique categories from projects.
-   * Filters out empty/null categories.
+   * Dynamically generated array of unique technologies from all projects.
+   * Includes 'all' option plus all unique technology names from projects.
+   * Extracts technologies from the technologies array of each project.
    * 
-   * @type {Array<string>} Array of category names for filter buttons
+   * @type {Array<string>} Array of technology names for filter buttons
    */
-  const categories = ['all', ...new Set(projects.map(project => project.category).filter(Boolean))];
+  const technologies = ['all', ...new Set(
+    projects.flatMap(project => 
+      project.technologies ? project.technologies : []
+    )
+  )];
 
   /**
-   * Filters projects based on selected category.
+   * Filters projects based on selected technology.
    * Updates both selectedCategory and filteredProjects states.
    * 
-   * @param {string} category - Category to filter by ('all' for no filter)
+   * @param {string} technology - Technology to filter by ('all' for no filter)
    * 
    * @example
-   * // Filter to show only web development projects
-   * filterProjects('web-development');
+   * // Filter to show only projects using React
+   * filterProjects('React (Frontend)');
    * 
    * // Show all projects
    * filterProjects('all');
    */
-  const filterProjects = (category) => {
-    setSelectedCategory(category);
-    if (category === 'all') {
+  const filterProjects = (technology) => {
+    setSelectedCategory(technology);
+    if (technology === 'all') {
       setFilteredProjects(projects);
     } else {
-      setFilteredProjects(projects.filter(project => project.category === category));
+      setFilteredProjects(projects.filter(project => 
+        project.technologies && project.technologies.includes(technology)
+      ));
     }
   };
 
@@ -173,18 +179,18 @@ const Portfolio = () => {
         </div>
       </section>
 
-      {/* Portfolio Filter Section - Category filtering buttons */}
+      {/* Portfolio Filter Section - Technology filtering buttons */}
       <section className="portfolio-filter">
         <div className="container">
           <div className="filter-buttons">
-            {categories.map((category) => (
+            {technologies.map((technology) => (
               <button
-                key={category}
-                className={`filter-btn ${selectedCategory === category ? 'active' : ''}`}
-                onClick={() => filterProjects(category)}
+                key={technology}
+                className={`filter-btn ${selectedCategory === technology ? 'active' : ''}`}
+                onClick={() => filterProjects(technology)}
               >
-                {/* Display formatted category names */}
-                {category === 'all' ? 'All Projects' : (category && category.charAt(0).toUpperCase() + category.slice(1))}
+                {/* Display formatted technology names */}
+                {technology === 'all' ? 'All Projects' : technology}
               </button>
             ))}
           </div>
@@ -197,7 +203,7 @@ const Portfolio = () => {
           {filteredProjects.length === 0 ? (
             /* Empty state when no projects match filter */
             <div className="no-projects">
-              <p>No projects found for the selected category.</p>
+              <p>No projects found for the selected technology.</p>
             </div>
           ) : (
             <div className="projects-grid">
@@ -243,7 +249,12 @@ const Portfolio = () => {
                   {/* Project information and metadata */}
                   <div className="project-content">
                     <div className="project-meta">
-                      <span className="project-category">{project.category?.name || project.category || 'Uncategorized'}</span>
+                      <span className="project-category">
+                        {project.technologies && project.technologies.length > 0 
+                          ? project.technologies[0]
+                          : 'No Technology'
+                        }
+                      </span>
                       <span className="project-date">{formatDate(project.created_at)}</span>
                     </div>
                     <h3 className="project-title">{project.title}</h3>
@@ -251,8 +262,8 @@ const Portfolio = () => {
                     {/* Technology tags for each project */}
                     <div className="project-technologies">
                       {project.technologies && project.technologies.map((tech, index) => (
-                        <span key={index} className="tech-tag">
-                          {tech.trim()}
+                        <span key={`${project.id}-tech-${index}`} className="tech-tag">
+                          {tech}
                         </span>
                       ))}
                     </div>
