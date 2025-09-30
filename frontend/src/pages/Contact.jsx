@@ -1,6 +1,42 @@
+/**
+ * @fileoverview Contact page component with dynamic admin profile integration.
+ * Displays contact information, social media links, and contact form with admin data fetched from API.
+ * 
+ * @author Portfolio Application
+ * @version 2.0.0 - Added dynamic admin profile fetching for contact information and social media links
+ */
+
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Contact.css';
+
+/**
+ * Contact Component - Contact page with dynamic admin information and contact form.
+ * 
+ * This component provides:
+ * - Hero section with contact introduction
+ * - Dynamic contact information (email, phone, location) from admin profile
+ * - Dynamic social media links (LinkedIn, GitHub, X/Twitter) from admin profile
+ * - Contact form with validation and submission handling
+ * - Loading states and error handling for both profile data and form submission
+ * - Responsive design with proper accessibility
+ * 
+ * @component
+ * @returns {JSX.Element} Complete contact page with dynamic admin information
+ * 
+ * @example
+ * // Used in App.jsx routing
+ * <Route path="/contact" element={<Contact />} />
+ * 
+ * Features:
+ * - Fetches admin profile from Django REST API
+ * - Dynamic contact information display
+ * - Form submission to backend API
+ * - Loading states and error handling
+ * - Social media links with proper security attributes
+ * 
+ * @version 2.0.0 - Added admin profile integration
+ */
 
 const Contact = () => {
   const [formData, setFormData] = useState({

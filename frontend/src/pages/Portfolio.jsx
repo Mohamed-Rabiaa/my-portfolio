@@ -11,11 +11,11 @@ import axios from 'axios';
 import './Portfolio.css';
 
 /**
- * Portfolio Component - Projects showcase page with filtering capabilities.
+ * Portfolio Component - Projects showcase page with technology-based filtering capabilities.
  * 
  * This component provides:
  * - Hero section with portfolio introduction
- * - Category-based project filtering system
+ * - Technology-based project filtering system (instead of categories)
  * - Responsive project grid with hover effects
  * - Project cards with images, descriptions, and technology tags
  * - External links to live demos and GitHub repositories
@@ -31,34 +31,35 @@ import './Portfolio.css';
  * 
  * Features:
  * - Fetches projects from Django REST API
- * - Dynamic category filtering
+ * - Dynamic technology filtering (e.g., React, Django, Python)
  * - Responsive image handling with fallbacks
- * - Date formatting for project timestamps
- * - Loading spinner during data fetch
- * - Technology tags display
+ * - SEO-friendly project URLs and metadata
+ * - Performance optimized with proper loading states
+ * 
+ * @version 2.0.0 - Updated to use technology-based filtering instead of categories
  */
 const Portfolio = () => {
   /**
-   * State for storing all projects data from the API.
-   * Contains complete projects list with all categories.
+   * State for storing all projects fetched from the API.
+   * Contains project data including title, description, technologies, and images.
    * 
-   * @type {Array<Object>} Array of project objects with title, description, category, technologies
+   * @type {Array<Object>} Array of project objects with title, description, technologies, images
    */
   const [projects, setProjects] = useState([]);
   
   /**
-   * State for storing filtered projects based on selected category.
-   * Updates when category filter is applied.
+   * State for storing filtered projects based on selected technology.
+   * Updates when technology filter is applied.
    * 
-   * @type {Array<Object>} Array of filtered project objects
+   * @type {Array<Object>} Filtered array of project objects
    */
   const [filteredProjects, setFilteredProjects] = useState([]);
   
   /**
-   * State for tracking the currently selected category filter.
+   * State for tracking the currently selected technology filter.
    * Defaults to 'all' to show all projects initially.
    * 
-   * @type {string} Current category filter ('all' or specific category name)
+   * @type {string} Current technology filter ('all' or specific technology name like 'React (Frontend)')
    */
   const [selectedCategory, setSelectedCategory] = useState('all');
   

@@ -2,7 +2,8 @@
 Django admin configuration for UserProfile model.
 
 This module provides admin interface customizations for managing user profiles,
-including profile photo uploads and user information management.
+including profile photo uploads, contact information, social media links, and user information management.
+Enhanced to support comprehensive profile management with social media integration.
 """
 
 from django.contrib import admin
@@ -16,7 +17,9 @@ class UserProfileInline(admin.StackedInline):
     Inline admin for UserProfile model.
     
     This allows editing the user profile information directly
-    from the User admin page.
+    from the User admin page, including profile photo, bio,
+    contact information (phone, location), and social media links
+    (LinkedIn, GitHub, Twitter/X).
     """
     model = UserProfile
     can_delete = False
@@ -30,8 +33,9 @@ class UserAdmin(BaseUserAdmin):
     
     This admin class extends Django's default UserAdmin to include
     the UserProfile inline, allowing administrators to manage
-    user profile photos and bio information directly from the
-    user edit page.
+    user profile photos, bio, contact information (phone, location),
+    and social media links (LinkedIn, GitHub, Twitter/X) directly 
+    from the user edit page.
     """
     inlines = (UserProfileInline,)
     

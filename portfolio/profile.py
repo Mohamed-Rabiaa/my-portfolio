@@ -16,12 +16,17 @@ class UserProfile(models.Model):
     User profile model that extends the built-in User model.
     
     This model maintains a one-to-one relationship with Django's User model
-    and adds additional fields like profile photo.
+    and adds additional fields like profile photo, contact information, and social media links.
     
     Attributes:
         user (OneToOneField): Link to Django's User model
         profile_photo (ImageField): User's profile photo
         bio (TextField): Optional user biography
+        phone (CharField): Contact phone number
+        location (CharField): Current location (city, country)
+        linkedin_url (URLField): LinkedIn profile URL
+        github_url (URLField): GitHub profile URL
+        twitter_url (URLField): Twitter/X profile URL
         created_at (DateTimeField): When the profile was created
         updated_at (DateTimeField): When the profile was last updated
     """

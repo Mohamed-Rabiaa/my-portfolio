@@ -1,9 +1,9 @@
 /**
- * @fileoverview Footer component for the Portfolio application.
- * Provides site-wide footer with links, social media connections, and copyright information.
+ * @fileoverview Footer component for the Portfolio application with dynamic social media links.
+ * Provides site-wide footer with links, dynamic social media connections from admin profile, and copyright information.
  * 
  * @author Portfolio Application
- * @version 1.0.0
+ * @version 2.0.0 - Added dynamic social media links from admin profile API
  */
 
 import { useState, useEffect } from 'react';
@@ -11,26 +11,32 @@ import axios from 'axios';
 import './Footer.css';
 
 /**
- * Footer Component - Site-wide footer component for the application.
+ * Footer Component - Site-wide footer component with dynamic social media links.
  * 
  * This component provides:
  * - Site description and branding
  * - Quick navigation links to all main pages
- * - Social media links (GitHub, LinkedIn, Twitter)
+ * - Dynamic social media links (GitHub, LinkedIn, X/Twitter) fetched from admin profile
+ * - Loading states and fallback handling for social media links
  * - Dynamic copyright notice with current year
  * - Consistent footer across all pages
  * 
  * @component
- * @returns {JSX.Element} Footer with navigation links, social links, and copyright
+ * @returns {JSX.Element} Footer with navigation links, dynamic social links, and copyright
  * 
  * @example
- * // Used in App.jsx as the main footer
+ * // Used in App.jsx layout
  * <Footer />
  * 
  * Features:
+ * - Fetches admin profile data for social media URLs
+ * - Conditional rendering of social links based on availability
+ * - Loading states while fetching admin profile
  * - Automatically updates copyright year
  * - External links open in new tabs with security attributes
  * - Responsive layout with multiple sections
+ * 
+ * @version 2.0.0 - Added dynamic social media links from admin profile
  */
 const Footer = () => {
   /**

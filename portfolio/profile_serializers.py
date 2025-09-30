@@ -55,7 +55,10 @@ class AdminProfileSerializer(serializers.ModelSerializer):
     """
     Serializer for admin profile information.
     
-    Provides a simplified view of the admin's profile for frontend display.
+    Provides a comprehensive view of the admin's profile for frontend display,
+    including personal information, contact details, and social media links.
+    Used specifically for displaying admin information on public-facing pages
+    like the homepage, contact page, and footer.
     """
     first_name = serializers.CharField(source='user.first_name', read_only=True)
     last_name = serializers.CharField(source='user.last_name', read_only=True)
