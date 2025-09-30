@@ -6,6 +6,8 @@
  * @version 1.0.0
  */
 
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import './Footer.css';
 
 /**
@@ -39,6 +41,30 @@ const Footer = () => {
    */
   const currentYear = new Date().getFullYear();
 
+  /**
+   * State for storing admin profile data including social media URLs.
+   * 
+   * @type {Object|null} Admin profile data with social media links
+   */
+  const [adminProfile, setAdminProfile] = useState(null);
+
+  /**
+   * Fetch admin profile data on component mount.
+   * Gets social media URLs from the backend API.
+   */
+  useEffect(() => {
+    const fetchAdminProfile = async () => {
+      try {
+        const response = await axios.get('http://127.0.0.1:8000/api/v1/portfolio/admin-profile/');
+        setAdminProfile(response.data);
+      } catch (error) {
+        console.error('Error fetching admin profile:', error);
+      }
+    };
+
+    fetchAdminProfile();
+  }, []);
+
   return (
     <footer className="footer">
       <div className="footer-container">
@@ -65,20 +91,38 @@ const Footer = () => {
           <div className="footer-section">
             <h4>Connect</h4>
             <div className="social-links">
-              {/* GitHub profile link */}
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer">
-                GitHub
-              </a>
-              
-              {/* LinkedIn profile link */}
-              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">
-                LinkedIn
-              </a>
-              
-              {/* Twitter profile link */}
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
-                Twitter
-              </a>
+              {/* Show loading state or social links */}
+              {adminProfile === null ? (
+                <p style={{ color: '#ccc', fontSize: '0.9rem' }}>Loading social links...</p>
+              ) : (
+                <>
+                  {/* GitHub profile link */}
+                  {adminProfile.github_url && (
+                    <a href={adminProfile.github_url} target="_blank" rel="noopener noreferrer">
+                      GitHub
+                    </a>
+                  )}
+                  
+                  {/* LinkedIn profile link */}
+                  {adminProfile.linkedin_url && (
+                    <a href={adminProfile.linkedin_url} target="_blank" rel="noopener noreferrer">
+                      LinkedIn
+                    </a>
+                  )}
+                  
+                  {/* X (formerly Twitter) profile link */}
+                  {adminProfile.twitter_url && (
+                    <a href={adminProfile.twitter_url} target="_blank" rel="noopener noreferrer">
+                      X
+                    </a>
+                  )}
+                  
+                  {/* Show message if no social links are available */}
+                  {!adminProfile.github_url && !adminProfile.linkedin_url && !adminProfile.twitter_url && (
+                    <p style={{ color: '#ccc', fontSize: '0.9rem' }}>No social links available</p>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
